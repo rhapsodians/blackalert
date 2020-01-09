@@ -1,4 +1,4 @@
-# blackalert
+# BlackAlert.sh
 
 ```USAGE:       $strName -r [pre|post|batch] -e [live|test] [-d directory for batch]   
                                                                                     
