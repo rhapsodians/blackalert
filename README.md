@@ -1,6 +1,6 @@
 # blackalert
 
-USAGE:       $strName -r [pre|post|batch] -e [live|test] [-d directory for batch]   
+```USAGE:       $strName -r [pre|post|batch] -e [live|test] [-d directory for batch]   
                                                                                     
   -r pre     Run the PRE-transcoding workflow for on raw rips                       
              so that they have standardised stream titles, forced subs,             
@@ -23,4 +23,5 @@ USAGE:       $strName -r [pre|post|batch] -e [live|test] [-d directory for batch
              for Plex                                                               
   -e test    Location/path selections for the content stored locally as part        
              of testing on both Mac and Windows                                     
-  -d <path>  Path to the parent directory of MKVs for batch processing  
+  -d <path>  Path to the parent directory of MKVs for batch processing  ```
+  
