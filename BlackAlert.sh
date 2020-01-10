@@ -1353,6 +1353,7 @@ other-transcode_commands() {
 		#   - check to ensure a FLAC track is being used in all cases for surround sound tracks. Ignore if there's a default stereo track
 		# 	- check to see if a track called AD or Commentary (or both) is present and include extra --add-audio options
 		# 	- if FLAC is the track codec, then use --eac3 otherwise if AC-3 is the main track, do no include --eac3
+		#   - by default, --add-audio downsamples to stereo. I would like to retain Surround sound 5.1 if the track is in 5.1.
 				
 		# Set up main audio and stereo options
 		
@@ -1422,13 +1423,19 @@ other-transcode_commands() {
 		esac
 		
 		# Check for a track called "Commentary" and/or "AD" ... exact matches only
-		if [ "$str05DefaultAudioTrackAudioCommentaryPresence" -ge 1 ]
+		if [ "$str05DefaultAudioTrackAudioCommentaryPresence" -ge 1 ] && [ "$str05DefaultAudioTrackChannelLayout" = "5.1(side)" ]
 		then
-			arrHwTranscodeRbCommand+=(--add-audio \"Commentary\")
+			arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=surround )
+		else
+			arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=stereo )	
 		fi
-		if [ "$str05DefaultAudioTrackAudioADPesence" -eq "1" ]
+		
+		
+		if [ "$str05DefaultAudioTrackAudioADPesence" -eq "1" ]  && [ "$str05DefaultAudioTrackChannelLayout" = "5.1(side)" ]
 		then
-			arrHwTranscodeRbCommand+=(--add-audio \"AD\")
+			arrHwTranscodeRbCommand+=(--add-audio \"AD\"=surround )
+		else
+			arrHwTranscodeRbCommand+=(--add-audio \"AD\"=stereo )
 		fi
 
 
