@@ -4,7 +4,7 @@
 # BlackAlert.sh                                                               #
 # Version 0.25                                                                #
 #                                                                             #
-# Copyright 2019 - Joe Hurley                                                 #
+# Copyright 2020 - Joe Hurley                                                 #
 #                                                                             #
 ###############################################################################
 #                                                                             #
@@ -1353,6 +1353,7 @@ other-transcode_commands() {
 		#   - check to ensure a FLAC track is being used in all cases for surround sound tracks. Ignore if there's a default stereo track
 		# 	- check to see if a track called AD or Commentary (or both) is present and include extra --add-audio options
 		# 	- if FLAC is the track codec, then use --eac3 otherwise if AC-3 is the main track, do no include --eac3
+		#   - by default, --add-audio downsamples to stereo. I would like to retain Surround sound 5.1 if the track is in 5.1.
 				
 		# Set up main audio and stereo options
 		
@@ -1422,15 +1423,56 @@ other-transcode_commands() {
 		esac
 		
 		# Check for a track called "Commentary" and/or "AD" ... exact matches only
+		# By default, these are set to stereo but retention of the underlying surround or stereo is important
+
+		str05AudioTrackChannelLayoutChoice1="7.1(side)"
+		str05AudioTrackChannelLayoutChoice2="5.1(side)"
+
 		if [ "$str05DefaultAudioTrackAudioCommentaryPresence" -ge 1 ]
 		then
-			arrHwTranscodeRbCommand+=(--add-audio \"Commentary\")
-		fi
-		if [ "$str05DefaultAudioTrackAudioADPesence" -eq "1" ]
-		then
-			arrHwTranscodeRbCommand+=(--add-audio \"AD\")
+			case $str05DefaultAudioTrackChannelLayout in
+			
+				${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
+					arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=surround )
+					;;
+
+				stereo)
+					arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=stereo )
+					;;
+
+				mono)
+					arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
+					;;
+
+				*)	
+					arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
+					;;	
+			esac	
 		fi
 
+
+		if [ "$str05DefaultAudioTrackAudioADPesence" -ge 1 ]
+		then
+			case $str05DefaultAudioTrackChannelLayout in
+			
+				${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
+					arrHwTranscodeRbCommand+=(--add-audio \"AD\"=surround )
+					;;
+					
+				stereo)
+					arrHwTranscodeRbCommand+=(--add-audio \"AD\"=stereo )
+					;;
+					
+				mono)
+					arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
+					;;
+					
+				*)	
+					arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
+					;;	
+			esac	
+		fi
+		
 
 		# FORCED TRACK SUB-TITLE SET-UP
 		# FFmpeg doesn’t dynamically reposition and scale the overlay like HandBrake. 
