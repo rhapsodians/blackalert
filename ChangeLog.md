@@ -2,4 +2,4 @@
 
 ## 0.25 ##
 
-- Features and changes tbc
+- First release to be installed/distributed via GitHub
