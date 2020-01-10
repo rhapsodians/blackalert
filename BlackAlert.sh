@@ -1423,21 +1423,56 @@ other-transcode_commands() {
 		esac
 		
 		# Check for a track called "Commentary" and/or "AD" ... exact matches only
-		if [ "$str05DefaultAudioTrackAudioCommentaryPresence" -ge 1 ] && [ "$str05DefaultAudioTrackChannelLayout" = "5.1(side)" ]
+		# By default, these are set to stereo but retention of the underlying surround or stereo is important
+
+		str05AudioTrackChannelLayoutChoice1="7.1(side)"
+		str05AudioTrackChannelLayoutChoice2="5.1(side)"
+
+		if [ "$str05DefaultAudioTrackAudioCommentaryPresence" -ge 1 ]
 		then
-			arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=surround )
-		else
-			arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=stereo )	
-		fi
-		
-		
-		if [ "$str05DefaultAudioTrackAudioADPesence" -eq "1" ]  && [ "$str05DefaultAudioTrackChannelLayout" = "5.1(side)" ]
-		then
-			arrHwTranscodeRbCommand+=(--add-audio \"AD\"=surround )
-		else
-			arrHwTranscodeRbCommand+=(--add-audio \"AD\"=stereo )
+			case $str05DefaultAudioTrackChannelLayout in
+			
+				${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
+					arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=surround )
+					;;
+
+				stereo)
+					arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=stereo )
+					;;
+
+				mono)
+					arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
+					;;
+
+				*)	
+					arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
+					;;	
+			esac	
 		fi
 
+
+		if [ "$str05DefaultAudioTrackAudioADPesence" -ge 1 ]
+		then
+			case $str05DefaultAudioTrackChannelLayout in
+			
+				${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
+					arrHwTranscodeRbCommand+=(--add-audio \"AD\"=surround )
+					;;
+					
+				stereo)
+					arrHwTranscodeRbCommand+=(--add-audio \"AD\"=stereo )
+					;;
+					
+				mono)
+					arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
+					;;
+					
+				*)	
+					arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
+					;;	
+			esac	
+		fi
+		
 
 		# FORCED TRACK SUB-TITLE SET-UP
 		# FFmpeg doesn’t dynamically reposition and scale the overlay like HandBrake. 
