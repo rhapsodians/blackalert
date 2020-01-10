@@ -4,7 +4,7 @@
 # BlackAlert.sh                                                               #
 # Version 0.25                                                                #
 #                                                                             #
-# Copyright 2019 - Joe Hurley                                                 #
+# Copyright 2020 - Joe Hurley                                                 #
 #                                                                             #
 ###############################################################################
 #                                                                             #
