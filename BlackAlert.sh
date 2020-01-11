@@ -1285,9 +1285,6 @@ other-transcode_commands() {
 		str05File=${str05FileName:2}
 		FILE=${dirProcessing}/${str05File}
 		
-		echo "FILE:   $FILE"
-		sleep 2
-		
 		if [ "$strBatchMode" = "On" ]
 		then
 			# BatchMode is ACTIVE
@@ -1449,9 +1446,6 @@ other-transcode_commands() {
 		str05AudioTrackChannelLayoutChoice1="7.1(side)"
 		str05AudioTrackChannelLayoutChoice2="5.1(side)"
 
-		echo "For $FILE:   str05DefaultAudioTrackAudioCommentaryPresence = $str05DefaultAudioTrackAudioCommentaryPresence"
-		sleep 2
-
 		if [ "$str05DefaultAudioTrackAudioCommentaryPresence" -ge 1 ]
 		then
 			case $str05DefaultAudioTrackCommentaryChannelLayout in
@@ -1473,10 +1467,6 @@ other-transcode_commands() {
 					;;	
 			esac	
 		fi
-
-
-		echo "For $FILE:   str05DefaultAudioTrackAudioADPesence = $str05DefaultAudioTrackAudioADPesence"
-		sleep 2
 
 		if [ "$str05DefaultAudioTrackAudioADPesence" -ge 1 ]
 		then
