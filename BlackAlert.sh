@@ -1316,12 +1316,24 @@ other-transcode_commands() {
   		str05DefaultAudioTrackADChannelLayout=""
   		str05DefaultAudioTrackSubForcedFlagPresence=""
   		str05ProgressiveOrInterlace=""
-  		
   		str05SubtitleEnglishPresence=""
   		str05SubtitleSDHPresence=""
   		str05SubtitleCommentaryPresence=""
   		
   		
+  		# In order to determine the channel width of AD and Commentary audio streams, there's an assumption that there'll only ever be one (1) AD track named "AD"
+  		# and so the jq search below is for "AD" only, uppercase. In the very unlikely event that two audio streams are called "AD" (and not AD1, AD2), then the sort -u
+  		# will determine the final channel width.
+  		#
+  		# A similar process exists for Commentary audio streams but this could be a little more complex because it's common to have multiple Commentary streams
+  		# and while each is named with "Commentary" or "commentary", there could be a difference in channel widths. However, it's very unlikely that a BR movie
+  		# with e.g. three commentary tracks would be a mixture of Surround 5.1 and stereo. If it is, it's a rarity. So the variable has a sort -u in place to 
+  		# make the value unique instead of a list from jq should 2 or more exist. This uniqueness has a minor risk of getting the width wrong if there's a mix
+  		# of channel widths so it's wise to check the corresponding auto-generated commands in these rate scenarios. If there is a mix, then it's probably 
+  		# going to require manual intervention to have sets of --add-audio flags looking for more details text strings to uniquely identify the string and then
+  		# manually assign the width (=stereo|surround) by stream.
+  	
+  	
   		declare -i str05DefaultAudioTrackAudioCommentaryPresence
   		
   		str05FfprobeOutput=$( step4_ffprobe_command $FILE )
@@ -1330,15 +1342,10 @@ other-transcode_commands() {
   		str05DefaultAudioTrackCodec=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .codec_name' )
   		str05DefaultAudioTrackChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .channel_layout' )
   		str05DefaultAudioTrackAudioCommentaryPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio") | .tags.title' | grep -i "Commentary" | wc -l )
+ 		str05DefaultAudioTrackCommentaryChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and contains(.tags.title="ommentary")) | .channel_layout' | sort -u )
+
   		str05DefaultAudioTrackAudioADPesence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio") | .tags.title' | grep -w "AD" | wc -l )
-
-  		str05DefaultAudioTrackADChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .tags.title=="AD") | .channel_layout' )
-		echo "str05DefaultAudioTrackADChannelLayout:   $str05DefaultAudioTrackADChannelLayout"
-		sleep 2
-  		str05DefaultAudioTrackCommentaryChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and contains(.tags.title="Commentary")) | .channel_layout' )
-		echo "str05DefaultAudioTrackCommentaryChannelLayout:   $str05DefaultAudioTrackCommentaryChannelLayout"
-		sleep 2
-
+  		str05DefaultAudioTrackADChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .tags.title=="AD") | .channel_layout' | sort -u )
 
   		str05DefaultAudioTrackSubForcedFlagPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .disposition.forced' | grep -w "1" | wc -l )
   		str05DefaultAudioTrackLanguage=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .tags.language' )
