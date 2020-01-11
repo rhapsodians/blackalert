@@ -2,7 +2,7 @@
 
 ###############################################################################
 # BlackAlert.sh                                                               #
-# Version 0.25                                                                #
+# Version 0.26                                                                #
 #                                                                             #
 # Copyright 2020 - Joe Hurley                                                 #
 #                                                                             #
@@ -22,7 +22,7 @@ DELAY=3
 
 echo "############################################################################################"
 echo "#                                                                                          #"
-echo "# BLACKALERT.SH (v0.25)                                                                    #"
+echo "# BLACKALERT.SH (v0.26)                                                                    #"
 echo "#                                                                                          #"
 echo "############################################################################################"
 
@@ -1285,6 +1285,9 @@ other-transcode_commands() {
 		str05File=${str05FileName:2}
 		FILE=${dirProcessing}/${str05File}
 		
+		echo "FILE:   $FILE"
+		sleep 2
+		
 		if [ "$strBatchMode" = "On" ]
 		then
 			# BatchMode is ACTIVE
@@ -1308,7 +1311,9 @@ other-transcode_commands() {
   		str05DefaultAudioTrackCodec=""
   		str05DefaultAudioTrackChannelLayout=""
   		str05DefaultAudioTrackAudioCommentaryPresence=""
+  		str05DefaultAudioTrackCommentaryChannelLayout=""
   		str05DefaultAudioTrackAudioADPesence=""
+  		str05DefaultAudioTrackADChannelLayout=""
   		str05DefaultAudioTrackSubForcedFlagPresence=""
   		str05ProgressiveOrInterlace=""
   		
@@ -1326,6 +1331,15 @@ other-transcode_commands() {
   		str05DefaultAudioTrackChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .channel_layout' )
   		str05DefaultAudioTrackAudioCommentaryPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio") | .tags.title' | grep -i "Commentary" | wc -l )
   		str05DefaultAudioTrackAudioADPesence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio") | .tags.title' | grep -w "AD" | wc -l )
+
+  		str05DefaultAudioTrackADChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .tags.title=="AD") | .channel_layout' )
+		echo "str05DefaultAudioTrackADChannelLayout:   $str05DefaultAudioTrackADChannelLayout"
+		sleep 2
+  		str05DefaultAudioTrackCommentaryChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and contains(.tags.title="Commentary")) | .channel_layout' )
+		echo "str05DefaultAudioTrackCommentaryChannelLayout:   $str05DefaultAudioTrackCommentaryChannelLayout"
+		sleep 2
+
+
   		str05DefaultAudioTrackSubForcedFlagPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .disposition.forced' | grep -w "1" | wc -l )
   		str05DefaultAudioTrackLanguage=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .tags.language' )
   		str05ProgressiveOrInterlace=$( echo "$str05FfprobeOutput" | jq -r '.streams[0].field_order' )
@@ -1428,9 +1442,12 @@ other-transcode_commands() {
 		str05AudioTrackChannelLayoutChoice1="7.1(side)"
 		str05AudioTrackChannelLayoutChoice2="5.1(side)"
 
+		echo "For $FILE:   str05DefaultAudioTrackAudioCommentaryPresence = $str05DefaultAudioTrackAudioCommentaryPresence"
+		sleep 2
+
 		if [ "$str05DefaultAudioTrackAudioCommentaryPresence" -ge 1 ]
 		then
-			case $str05DefaultAudioTrackChannelLayout in
+			case $str05DefaultAudioTrackCommentaryChannelLayout in
 			
 				${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
 					arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=surround )
@@ -1451,9 +1468,12 @@ other-transcode_commands() {
 		fi
 
 
+		echo "For $FILE:   str05DefaultAudioTrackAudioADPesence = $str05DefaultAudioTrackAudioADPesence"
+		sleep 2
+
 		if [ "$str05DefaultAudioTrackAudioADPesence" -ge 1 ]
 		then
-			case $str05DefaultAudioTrackChannelLayout in
+			case $str05DefaultAudioTrackADChannelLayout in
 			
 				${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
 					arrHwTranscodeRbCommand+=(--add-audio \"AD\"=surround )
