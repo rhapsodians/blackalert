@@ -1,5 +1,13 @@
 # Change Log #
 
+## 0.26 ##
+
+- Bug fix and upgrade to accurately determine the channel layout of "AD" and "Commentary" audio streams so the correct width (`=stereo|surround`)s set in the `--add-audio "AD"|"Commentary"` auto-generated flags.
+- Addition of notes in the script to explain the above in more detail.
+
+
+
+
 ## 0.25 ##
 
 - First release to be installed/distributed via GitHub
