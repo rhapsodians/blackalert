@@ -273,7 +273,7 @@ pre_runbook() {
 	raw_media_stream_naming
 
 	# Step 5:  	Dynamic building of other-transcode command
-	other-transcode_commands
+#	other-transcode_commands
 	other-transcode_commands_concatenate
 	
 	strEndDateTime=$(date "+%Y%m%d-%H%M%S")
@@ -546,27 +546,37 @@ step4_track_editing() {
 	
 	cat << _EOF_
 
-=======================================================
+=================================================================
 Please select one of the following:
-=======================================================
+=================================================================
 
 	1. Rename or add a title to a VIDEO stream
 	2. Rename or add a title to a AUDIO stream
 	3. Rename or add a title to a SUBTITLE stream
 	4. Set audio default track
 	5. Set the forced-subtitle flag
-	6. Create single/unified mkvpropedit script
-	7. Use --x264-avbr software encoding
-	8. Next
+	6. Copy original video (no transcoding)
+	7. AUDIO Options
+		- Copy the main audio track (no transcoding)
+		- Copy a specific audio track (no transcoding)
+		- Copy all audio tracks (no transcoding)
+		- Add audio by language
+		- Add audio with titles containing string
+		- Change Audio Format defaults 		
+	8. MORE Options
+		- Create single/unified mkvpropedit script
+		- Use --x264-avbr software encoding
+		- Disable forced subtitle burn-in	
+	9. Next
 	0. Quit
-	
-=======================================================
+
+=================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-8] > "
+	  read -p "Enter selection [0-9] > "
 
-  		if [[ $REPLY =~ ^[0-8]$ ]]; then
+  		if [[ $REPLY =~ ^[0-9]$ ]]; then
     	case $REPLY in
      	1)
            	step4_ffprobe_tsv
@@ -595,20 +605,26 @@ _EOF_
           	;;	
         6)
         	step4_ffprobe_tsv
-        	step4_mkvpropedit_unfied_command
+        	step4_copy_original_video
+
+#        	step4_mkvpropedit_unfied_command
         	continue
           	;;
         7)
-        	step4_usex264-avbr
+        	step4_track_editing_AudioOptions
+#        	step4_usex264-avbr
         	continue
         	;;  		  	
         8)
-        	step4_ffprobe_tsv
+        	echo "what goes here???"
+        	;;
+        9)  step4_ffprobe_tsv
         	step4_mkvpropedit_unfied_command
         	step4_tsv_cleanup
         	step4_ffprobe_json_output raw
+        	other-transcode_commands2
         	break
-        	;;
+        	;;	
         0)
         	exit
         	;;	
@@ -620,6 +636,87 @@ _EOF_
 	done
 
 }
+
+
+
+step4_track_editing_AudioOptions() {
+	
+	while true; do
+	step4_ffprobe_summary
+	
+	cat << _EOF_
+
+=================================================================
+AUDIO OPTIONS
+=================================================================
+
+Please select one of the following:
+
+	1. Copy the main audio track (no transcoding)
+	2. Copy a specific audio track (no transcoding)
+	3. Copy all audio tracks (no transcoding)
+	4. Add audio by language
+	5. Add audio with titles containing string
+	6. Change Audio Format defaults 		
+	7. Back
+	0. Quit
+
+=================================================================
+
+_EOF_
+
+	  read -p "Enter selection [0-7] > "
+
+  		if [[ $REPLY =~ ^[0-9]$ ]]; then
+    	case $REPLY in
+     	1)
+           	step4_ffprobe_tsv
+      	  	step4_copy_main_audio
+          	continue
+          	;;
+      	2)
+      	  	step4_ffprobe_tsv
+      	  	step4_xxx
+          	continue
+          	;;
+      	3)
+      	  	step4_ffprobe_tsv
+      	  	step4_xxx
+          	continue
+          	;;
+        4)
+      	  	step4_ffprobe_tsv
+      	  	step4_xxx
+          	continue
+          	;;
+        5)
+      	  	step4_ffprobe_tsv
+      	  	step4_xxx
+      	  	continue
+          	;;	
+        6)
+        	step4_ffprobe_tsv
+      	  	step4_xxx
+        	continue
+          	;;
+        7)
+        	break
+        	;;	
+        0)
+        	exit
+        	;;	
+    	esac
+  	else
+    	echo "Invalid entry"
+    	sleep $DELAY
+  	fi
+	done
+
+}
+
+
+
+
 
 
 step4_ffprobe_summary() {
@@ -1113,6 +1210,80 @@ step4_set_forced_subtitle_track() {
 
 
 
+step4_copy_original_video() {
+	
+	# When this option is chosen, no video transcoding will take place but instead
+	# the main video track will be copied directly using the --copy-video argument.
+	# 
+	# The --copy-video argument necessitates the removal of --nvenc --hevc --nvenc-temporal-aq
+	# from the final other-transcode command.
+	
+	
+	
+	# Step 1 - ensure there is only one video track
+	
+	# Define the variables for this function
+	strCheckVideoTrackCount=""
+	strSetCopyVideo=""	
+
+	# Identify the current forced subtitle and index number
+	strCheckVideoTrackCount=$( grep ^video $strFfprobeTsvFile | cut -f1 | wc -l )
+
+	if [ $strCheckVideoTrackCount -eq 1 ] 
+		then
+			strSetCopyVideo="true"
+	elif [ $strCheckVideoTrackCount -ne 1 ]
+		then
+			echo "More than one video track has been found."
+			echo "Please use mkvpropedit GUI to remove the addition video tracks"
+			echo "so that only one video track remains."
+	fi
+
+	echo "---------------------------------------------------"
+	echo "The --copy-video flag has been set."
+	echo "---------------------------------------------------"
+
+}
+
+
+
+step4_copy_main_audio() {
+	
+	# When this option is chosen, the default audio track will be copied directly 
+	# using the --main-audio=original argument.
+	
+	# Step 1 - ensure the default audio track is set
+	
+	# Define the variables for this function
+	strCurrentAudioDefaultIndexCount=""
+	strCurrentAudioDefaultIndex=""
+	strSetMainAudioTrackCopy=""	
+
+	# Identify the current default audio track and index number
+	strFFprobeDetail_MainAudio=$(ffprobe -i "$FILE" -v error -show_format -show_streams -show_data -print_format json=compact=1 2>/dev/null)
+	strCurrentAudioDefaultIndex=$(echo "$strFFprobeDetail_MainAudio" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .index')
+	strCurrentAudioDefaultIndexCount=$(echo "$strFFprobeDetail_MainAudio" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .index' | wc -l)
+
+	if [ $strCurrentAudioDefaultIndexCount -eq 1 ] 
+		then
+			strSetMainAudioTrackCopy="true"
+	else 
+		echo "More than one default track has been found."
+		echo "Please use mkvpropedit GUI to correct this so that only one"
+		echo "default audio track is set."
+	fi
+
+	echo "---------------------------------------------------------------------"
+	echo "The --main-audio ${strCurrentAudioDefaultIndex}=original has been set."
+	echo "---------------------------------------------------------------------"
+
+
+}
+
+
+
+
+
 
 step4_mkvpropedit_unfied_command() {
 
@@ -1359,9 +1530,14 @@ other-transcode_commands() {
 
   		declare -a arrHwTranscodeCommand=()
   		
-  		if [[ "$strX264AVBRActive" = "yes" ]]
-  		then
+  		if [[ "$strX264AVBRActive" = "true" ]]
+  			then
   			arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --x264-avbr --crop auto )
+  			
+  		elif [[ "$strSetCopyVideo" = "true" ]]
+  		 	then
+  		 	arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --copy-video )
+
   		else
 			# arrHwTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
 			arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
@@ -1379,51 +1555,56 @@ other-transcode_commands() {
 		# only apply if the layout is 7.1 or 5.1 only. No stereo track should be added to an existing stereo or mono
 		# source.
 		
+		if [[ "$strSetMainAudioTrackCopy" = "true" ]]
+		then
+			strMainAudioOriginalSetting="=original"			
+		fi
+		
 		
 		case $str05DefaultAudioTrackCodec in
 		
 			flac)
 				if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
 				then
-					arrHwTranscodeRbCommand+=(--eac3 --main-audio $str05DefaultAudioTrackIndex)
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
 				else
-					arrHwTranscodeRbCommand+=(--eac3 --main-audio $str05DefaultAudioTrackIndex --add-audio ${str05DefaultAudioTrackIndex}=stereo)
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
 				fi	
 				;;
 			eac3)
 				if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
 				then
-					arrHwTranscodeRbCommand+=(--eac3 --main-audio $str05DefaultAudioTrackIndex)
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
 				else
-					arrHwTranscodeRbCommand+=(--eac3 --main-audio $str05DefaultAudioTrackIndex --add-audio ${str05DefaultAudioTrackIndex}=stereo)
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
 				fi	
 				;;				
 			ac3)
 				if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
 				then
-					arrHwTranscodeRbCommand+=(--main-audio $str05DefaultAudioTrackIndex)
+					arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
 				else
-					arrHwTranscodeRbCommand+=(--main-audio $str05DefaultAudioTrackIndex --add-audio ${str05DefaultAudioTrackIndex}=stereo)
+					arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
 				fi	
 				;;	
 			dts)
 				if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
 				then
-					arrHwTranscodeRbCommand+=(--eac3 --main-audio $str05DefaultAudioTrackIndex)
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
 				else
-					arrHwTranscodeRbCommand+=(--eac3 --main-audio $str05DefaultAudioTrackIndex --add-audio ${str05DefaultAudioTrackIndex}=stereo)
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
 				fi	
 				;;
 			truehd)
 				if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
 				then
-					arrHwTranscodeRbCommand+=(--eac3 --main-audio $str05DefaultAudioTrackIndex)
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
 				else
-					arrHwTranscodeRbCommand+=(--eac3 --main-audio $str05DefaultAudioTrackIndex --add-audio ${str05DefaultAudioTrackIndex}=stereo)
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
 				fi	
 				;;				
 			pcm_s16le)
-				arrHwTranscodeRbCommand+=(--main-audio $str05DefaultAudioTrackIndex)
+				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
 				;;
 				
 			*)
@@ -1584,6 +1765,12 @@ other-transcode_commands() {
 			echo "  - ${strRawName}"
 		fi
 
+		# Unset Variables for next iteration
+		unset strSetCopyVideo
+		unset strX264AVBRActive
+		unset strSetMainAudioTrackCopy
+		unset strMainAudioOriginalSetting
+		
 
 		echo "${arrHwTranscodeRbCommand[@]}" > $dirOutboxCommands/${strRawName}.other-transcode.command.txt
 
@@ -1597,6 +1784,335 @@ other-transcode_commands() {
 	done
 
 }
+
+
+other-transcode_commands2() {
+
+
+	strRawFilename=`echo $FILE | rev | cut -d'/' -f 1 | rev`
+	strRawName=`echo $strRawFilename | sed 's/\.mkv//g'`
+
+	echo "*******************************************************************************"
+	echo "Building the other-transcode command for: " 
+	echo "$strRawName"
+
+
+	strWinFile="${dirWinWorkDir}\\04_ReadyForTranscoding\\${strRawFilename}"
+
+	IFS=$'\n'
+			
+	# Variables	
+  	
+  	str05FfprobeOutput=""
+  	str05DefaultVideoCodec=""
+  	str05DefaultAudioTrackIndex=""
+  	str05DefaultAudioTrackCodec=""
+  	str05DefaultAudioTrackChannelLayout=""
+  	str05DefaultAudioTrackAudioCommentaryPresence=""
+  	str05DefaultAudioTrackCommentaryChannelLayout=""
+  	str05DefaultAudioTrackAudioADPesence=""
+  	str05DefaultAudioTrackADChannelLayout=""
+  	str05DefaultAudioTrackSubForcedFlagPresence=""
+  	str05ProgressiveOrInterlace=""
+  	str05SubtitleEnglishPresence=""
+  	str05SubtitleSDHPresence=""
+  	str05SubtitleCommentaryPresence=""
+  	
+  	
+  	# In order to determine the channel width of AD and Commentary audio streams, there's an assumption that there'll only ever be one (1) AD track named "AD"
+  	# and so the jq search below is for "AD" only, uppercase. In the very unlikely event that two audio streams are called "AD" (and not AD1, AD2), then the sort -u
+  	# will determine the final channel width.
+  	#
+  	# A similar process exists for Commentary audio streams but this could be a little more complex because it's common to have multiple Commentary streams
+  	# and while each is named with "Commentary" or "commentary", there could be a difference in channel widths. However, it's very unlikely that a BR movie
+  	# with e.g. three commentary tracks would be a mixture of Surround 5.1 and stereo. If it is, it's a rarity. So the variable has a sort -u in place to 
+  	# make the value unique instead of a list from jq should 2 or more exist. This uniqueness has a minor risk of getting the width wrong if there's a mix
+  	# of channel widths so it's wise to check the corresponding auto-generated commands in these rate scenarios. If there is a mix, then it's probably 
+  	# going to require manual intervention to have sets of --add-audio flags looking for more details text strings to uniquely identify the string and then
+  	# manually assign the width (=stereo|surround) by stream.
+  	
+  	
+  	declare -i str05DefaultAudioTrackAudioCommentaryPresence
+  	
+  	str05FfprobeOutput=$( step4_ffprobe_command $FILE )
+  	str05DefaultVideoCodec=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="video") | .codec_name' )
+  	str05DefaultAudioTrackIndex=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .index' )
+  	str05DefaultAudioTrackCodec=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .codec_name' )
+  	str05DefaultAudioTrackChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .channel_layout' )
+  	str05DefaultAudioTrackAudioCommentaryPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio") | .tags.title' | grep -i "Commentary" | wc -l )
+ 	str05DefaultAudioTrackCommentaryChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and contains(.tags.title="ommentary")) | .channel_layout' | sort -u )
+
+  	str05DefaultAudioTrackAudioADPesence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio") | .tags.title' | grep -w "AD" | wc -l )
+  	str05DefaultAudioTrackADChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .tags.title=="AD") | .channel_layout' | sort -u )
+
+  	str05DefaultAudioTrackSubForcedFlagPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .disposition.forced' | grep -w "1" | wc -l )
+  	str05DefaultAudioTrackLanguage=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .tags.language' )
+  	str05ProgressiveOrInterlace=$( echo "$str05FfprobeOutput" | jq -r '.streams[0].field_order' )
+	str05SubtitleEnglishPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep -i "English" | wc -l )
+	str05SubtitleSDHPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep "SDH" | wc -l )
+	str05SubtitleCommentaryPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep -i "Commentary" | wc -l )
+
+
+	# Assumptions 
+	#  - one video track is present -> audio track numbering for other-transcode will match the ffprobe index numbers
+	#  - this script will run on a Mac to generate commands for an Nvidia-enabled PC
+	#  - FFmpeg doesn’t dynamically reposition and scale the overlay like HandBrake. As a result, --crop auto cannot be used where burn-in subtitles is needed.
+
+  	declare -a arrHwTranscodeCommand=()
+  	
+  	if [[ "$strX264AVBRActive" = "true" ]]
+  		then
+  		arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --x264-avbr --crop auto )
+  		
+  	elif [[ "$strSetCopyVideo" = "true" ]]
+  	 	then
+  	 	arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --copy-video )
+
+  	else
+		# arrHwTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
+		arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
+	fi			
+
+	# AUDIO SET-UP
+	#   - check to ensure a FLAC track is being used in all cases for surround sound tracks. Ignore if there's a default stereo track
+	# 	- check to see if a track called AD or Commentary (or both) is present and include extra --add-audio options
+	# 	- if FLAC is the track codec, then use --eac3 otherwise if AC-3 is the main track, do no include --eac3
+	#   - by default, --add-audio downsamples to stereo. I would like to retain Surround sound 5.1 if the track is in 5.1.
+			
+	# Set up main audio and stereo options
+	
+	# The channel layout can be 7.1, 5.1, stereo or mono so the addition of an additional stereo track should
+	# only apply if the layout is 7.1 or 5.1 only. No stereo track should be added to an existing stereo or mono
+	# source.
+	
+	if [[ "$strSetMainAudioTrackCopy" = "true" ]]
+	then
+		strMainAudioOriginalSetting="=original"
+	fi
+	
+	
+	case $str05DefaultAudioTrackCodec in
+	
+		flac)
+			if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
+			then
+				arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
+			else
+				arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
+			fi	
+			;;
+		eac3)
+			if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
+			then
+				arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
+			else
+				arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
+			fi	
+			;;				
+		ac3)
+			if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
+			then
+				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
+			else
+				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
+			fi	
+			;;	
+		dts)
+			if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
+			then
+				arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
+			else
+				arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
+			fi	
+			;;
+		truehd)
+			if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
+			then
+				arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
+			else
+				arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
+			fi	
+			;;				
+		pcm_s16le)
+			arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
+			;;
+			
+		*)
+			echo "*********************************************************************************"
+			echo "WARNING:    "
+			echo ""
+			echo "$FILE"
+			echo ""
+			echo "The Default audio track is neither FLAC, EAC3, AC-3, DTS, TrueHD nor PSM_S16LE"
+			echo ""
+			echo "Please check ... exiting now"
+			echo "*********************************************************************************"
+			exit 1		
+			;;
+	esac
+	
+	# Check for a track called "Commentary" and/or "AD" ... exact matches only
+	# By default, these are set to stereo but retention of the underlying surround or stereo is important
+
+	str05AudioTrackChannelLayoutChoice1="7.1(side)"
+	str05AudioTrackChannelLayoutChoice2="5.1(side)"
+
+	if [ "$str05DefaultAudioTrackAudioCommentaryPresence" -ge 1 ]
+	then
+		case $str05DefaultAudioTrackCommentaryChannelLayout in
+		
+			${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
+				arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=surround )
+				;;
+
+			stereo)
+				arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=stereo )
+				;;
+
+			mono)
+				arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
+				;;
+
+			*)	
+				arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
+				;;	
+		esac	
+	fi
+
+	if [ "$str05DefaultAudioTrackAudioADPesence" -ge 1 ]
+	then
+		case $str05DefaultAudioTrackADChannelLayout in
+		
+			${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
+				arrHwTranscodeRbCommand+=(--add-audio \"AD\"=surround )
+				;;
+				
+			stereo)
+				arrHwTranscodeRbCommand+=(--add-audio \"AD\"=stereo )
+				;;
+				
+			mono)
+				arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
+				;;
+				
+			*)	
+				arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
+				;;	
+		esac	
+	fi
+	
+
+	# FORCED TRACK SUB-TITLE SET-UP
+	# FFmpeg doesn’t dynamically reposition and scale the overlay like HandBrake. 
+	# As a result, --crop auto cannot be used if the forced-subtitle flag is set and burn-in applied.
+	# For all other cases, --crop auto is applied below instead. 
+	#
+	# [2019.09.25] - removed from defaults as testing has shown
+	# that there's a 30% drop-off in fps when crops > 55 pixels are applied. As a result, full frame will be the DEFAULT
+	# to retain max fps speed but also to prevent subtitle positional issues with ffmpeg.
+	
+	if [ "$str05DefaultAudioTrackSubForcedFlagPresence" -eq "1" ]
+	then
+		arrHwTranscodeRbCommand+=(--burn-subtitle auto)
+	fi
+
+
+	# Addition of specific subtitles covering "English", "SDH" and "Commentary"
+	# The vast majority of subtitle streams contain one or more subtitles and these are labeled in a standard/consistent way using 
+	# "English" or "SDH" or some text with "Commentary" in its title.
+	# This is the norm for the majority of transcodes. 
+	#
+	# However, when the main language is NOT English (e.g. Chinese, Japanese, French, Swedish etc.)
+	# then I'll burn-in the default English or SDH subtitle track by setting it as a Forced Subtitle in the interactive section.
+	# As a result, we need to check the language of the default audio track's language setting and if it's not English (eng), 
+	# the following subtitle(s) are added if they are available:
+	# - "Commentary"
+	#		
+	# But, in the case of non-English default audio streams, if there is no forced flag, then the full compliment of possible subtitles 
+	# ("English", "SDH", "Commentary") can also be added so that an English PGS is present to be manually set when watching the 
+	# transcoded movie.
+	
+			
+	case $str05DefaultAudioTrackLanguage in
+		eng)
+			if [ "$str05SubtitleEnglishPresence" -eq "1" ]
+			then
+				arrHwTranscodeRbCommand+=(--add-subtitle \"English\")
+			fi
+			
+			if [ "$str05SubtitleSDHPresence" -eq 1 ]
+			then
+				arrHwTranscodeRbCommand+=(--add-subtitle \"SDH\")
+			fi
+			
+			if [ "$str05SubtitleCommentaryPresence" -ge 1 ]
+			then
+				arrHwTranscodeRbCommand+=(--add-subtitle \"Commentary\")
+			fi
+			;;
+		*)
+			if [ "$str05DefaultAudioTrackSubForcedFlagPresence" -eq "1" ]
+			then
+				if [ "$str05SubtitleCommentaryPresence" -ge 1 ]
+				then
+					arrHwTranscodeRbCommand+=(--add-subtitle \"Commentary\")
+				fi
+			else
+				if [ "$str05SubtitleEnglishPresence" -eq "1" ]
+				then
+					arrHwTranscodeRbCommand+=(--add-subtitle \"English\")
+				fi
+			
+				if [ "$str05SubtitleSDHPresence" -eq 1 ]
+				then
+					arrHwTranscodeRbCommand+=(--add-subtitle \"SDH\")
+				fi
+			
+				if [ "$str05SubtitleCommentaryPresence" -ge 1 ]
+				then
+					arrHwTranscodeRbCommand+=(--add-subtitle \"Commentary\")
+				fi
+			fi
+			;;
+	esac
+	
+
+  	# CHECK FOR INTERLACED (720i or 1080i) CONTENT
+  	# The expectation for field_order is "progressive" but if any of the interlaced options are found,
+  	# deinterlacing will be needed. "field_order" values include 'tt', 'bb', 'tb' and 'bt' for interlaced content
+  	# or "progressive"
+  	  	
+	if [ "$str05ProgressiveOrInterlace" != "progressive" ]
+	then
+		arrHwTranscodeRbCommand+=(--deinterlace)
+	fi
+
+
+	if [ "$str05ProgressiveOrInterlace" != "progressive" ]
+	then
+		echo "  - ${strRawName}    (with deinterlace included)"
+	else
+		echo "  - ${strRawName}"
+	fi
+
+	# Unset Variables for next iteration
+	unset strSetCopyVideo
+	unset strX264AVBRActive
+	unset strSetMainAudioTrackCopy
+	unset strMainAudioOriginalSetting
+	
+	echo "${arrHwTranscodeRbCommand[@]}" > $dirOutboxCommands/${strRawName}.other-transcode.command.txt
+  	  		
+  	if [ -f ${dirProcessing}/$strRawFilename ]
+	then
+		mv ${dirProcessing}/$strRawFilename ${dirReadyForTranscoding}/${strRawFilename}
+	fi
+  		  				
+
+}
+
+
+
 
 
 other-transcode_commands_concatenate () {
