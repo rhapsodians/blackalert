@@ -1794,7 +1794,7 @@ other-transcode_commands2() {
 
 	echo "*******************************************************************************"
 	echo "Building the other-transcode command for: " 
-	echo "$strRawName"
+	echo "  - $strRawName"
 
 
 	strWinFile="${dirWinWorkDir}\\04_ReadyForTranscoding\\${strRawFilename}"
@@ -2087,13 +2087,6 @@ other-transcode_commands2() {
 		arrHwTranscodeRbCommand+=(--deinterlace)
 	fi
 
-
-	if [ "$str05ProgressiveOrInterlace" != "progressive" ]
-	then
-		echo "  - ${strRawName}    (with deinterlace included)"
-	else
-		echo "  - ${strRawName}"
-	fi
 
 	# Unset Variables for next iteration
 	unset strSetCopyVideo
