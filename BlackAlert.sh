@@ -555,11 +555,11 @@ Please select one of the following:
 	3. Rename or add a title to a SUBTITLE stream
 	4. Set audio default track
 	5. Set the forced-subtitle flag
-	6. Copy original video (no transcoding)
+	6. Copy original video (no video transcoding)
 	7. AUDIO Options
-		- Copy the main audio track (no transcoding)
-		- Copy a specific audio track (no transcoding)
-		- Copy all audio tracks (no transcoding)
+		- Copy the main audio track (no audio transcoding)
+		- Copy a specific audio track (no audio transcoding)
+		- Copy all audio tracks (no audio transcoding)
 		- Add audio by language
 		- Add audio with titles containing string
 		- Change Audio Format defaults 		
@@ -1480,7 +1480,7 @@ other-transcode_commands() {
   		str05DefaultAudioTrackChannelLayout=""
   		str05DefaultAudioTrackAudioCommentaryPresence=""
   		str05DefaultAudioTrackCommentaryChannelLayout=""
-  		str05DefaultAudioTrackAudioADPesence=""
+  		str05DefaultAudioTrackAudioADPresence=""
   		str05DefaultAudioTrackADChannelLayout=""
   		str05DefaultAudioTrackSubForcedFlagPresence=""
   		str05ProgressiveOrInterlace=""
@@ -1512,7 +1512,7 @@ other-transcode_commands() {
   		str05DefaultAudioTrackAudioCommentaryPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio") | .tags.title' | grep -i "Commentary" | wc -l )
  		str05DefaultAudioTrackCommentaryChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and contains(.tags.title="ommentary")) | .channel_layout' | sort -u )
 
-  		str05DefaultAudioTrackAudioADPesence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio") | .tags.title' | grep -w "AD" | wc -l )
+  		str05DefaultAudioTrackAudioADPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio") | .tags.title' | grep -w "AD" | wc -l )
   		str05DefaultAudioTrackADChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .tags.title=="AD") | .channel_layout' | sort -u )
 
   		str05DefaultAudioTrackSubForcedFlagPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .disposition.forced' | grep -w "1" | wc -l )
@@ -1649,7 +1649,7 @@ other-transcode_commands() {
 			esac	
 		fi
 
-		if [ "$str05DefaultAudioTrackAudioADPesence" -ge 1 ]
+		if [ "$str05DefaultAudioTrackAudioADPresence" -ge 1 ]
 		then
 			case $str05DefaultAudioTrackADChannelLayout in
 			
@@ -1810,7 +1810,7 @@ other-transcode_commands2() {
   	str05DefaultAudioTrackChannelLayout=""
   	str05DefaultAudioTrackAudioCommentaryPresence=""
   	str05DefaultAudioTrackCommentaryChannelLayout=""
-  	str05DefaultAudioTrackAudioADPesence=""
+  	str05DefaultAudioTrackAudioADPresence=""
   	str05DefaultAudioTrackADChannelLayout=""
   	str05DefaultAudioTrackSubForcedFlagPresence=""
   	str05ProgressiveOrInterlace=""
@@ -1842,7 +1842,7 @@ other-transcode_commands2() {
   	str05DefaultAudioTrackAudioCommentaryPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio") | .tags.title' | grep -i "Commentary" | wc -l )
  	str05DefaultAudioTrackCommentaryChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and contains(.tags.title="ommentary")) | .channel_layout' | sort -u )
 
-  	str05DefaultAudioTrackAudioADPesence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio") | .tags.title' | grep -w "AD" | wc -l )
+  	str05DefaultAudioTrackAudioADPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio") | .tags.title' | grep -w "AD" | wc -l )
   	str05DefaultAudioTrackADChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .tags.title=="AD") | .channel_layout' | sort -u )
 
   	str05DefaultAudioTrackSubForcedFlagPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .disposition.forced' | grep -w "1" | wc -l )
@@ -1979,7 +1979,7 @@ other-transcode_commands2() {
 		esac	
 	fi
 
-	if [ "$str05DefaultAudioTrackAudioADPesence" -ge 1 ]
+	if [ "$str05DefaultAudioTrackAudioADPresence" -ge 1 ]
 	then
 		case $str05DefaultAudioTrackADChannelLayout in
 		
