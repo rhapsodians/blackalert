@@ -273,7 +273,7 @@ pre_runbook() {
 	raw_media_stream_naming
 
 	# Step 5:  	Dynamic building of other-transcode command
-#	other-transcode_commands
+	other-transcode_commands
 	other-transcode_commands_concatenate
 	
 	strEndDateTime=$(date "+%Y%m%d-%H%M%S")
@@ -521,6 +521,10 @@ raw_media_stream_naming() {
 	do
 		str04File=${str04FileName:2}
 		FILE=${dirProcessing}/${str04File}
+		
+		str04RawFilename=`echo $FILE | rev | cut -d'/' -f 1 | rev`
+	    str04RawName=`echo $str04RawFilename | sed 's/\.mkv//g'`
+		
 
 		IFS=$'\n'
 		# Function calls here	
@@ -606,7 +610,6 @@ _EOF_
         6)
         	step4_ffprobe_tsv
         	step4_copy_original_video
-
 #        	step4_mkvpropedit_unfied_command
         	continue
           	;;
@@ -622,7 +625,7 @@ _EOF_
         	step4_mkvpropedit_unfied_command
         	step4_tsv_cleanup
         	step4_ffprobe_json_output raw
-        	other-transcode_commands2
+
         	break
         	;;	
         0)
@@ -1217,9 +1220,12 @@ step4_copy_original_video() {
 	# 
 	# The --copy-video argument necessitates the removal of --nvenc --hevc --nvenc-temporal-aq
 	# from the final other-transcode command.
-	
-	
-	
+	#
+	# As this option will not rely on the metadata contained within an ffprobe search,
+	# a trigger (override) file will be required for this and other options so that 
+	# batch processing or future retranscoding has a record of the switch.
+
+		
 	# Step 1 - ensure there is only one video track
 	
 	# Define the variables for this function
@@ -1231,7 +1237,8 @@ step4_copy_original_video() {
 
 	if [ $strCheckVideoTrackCount -eq 1 ] 
 		then
-			strSetCopyVideo="true"
+			echo "Output file:  $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt "
+			echo "strSetCopyVideo,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt 
 	elif [ $strCheckVideoTrackCount -ne 1 ]
 		then
 			echo "More than one video track has been found."
@@ -1264,9 +1271,14 @@ step4_copy_main_audio() {
 	strCurrentAudioDefaultIndex=$(echo "$strFFprobeDetail_MainAudio" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .index')
 	strCurrentAudioDefaultIndexCount=$(echo "$strFFprobeDetail_MainAudio" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .index' | wc -l)
 
+
+	echo "strRawName:   $strRawName"
+	
 	if [ $strCurrentAudioDefaultIndexCount -eq 1 ] 
 		then
-			strSetMainAudioTrackCopy="true"
+			echo "strSetMainAudioTrackCopy,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+			echo "FILE:  $dirOutboxCommands/${strRawName}.other-transcode.override.command.txt"
+
 	else 
 		echo "More than one default track has been found."
 		echo "Please use mkvpropedit GUI to correct this so that only one"
@@ -1422,7 +1434,8 @@ step4_usex264-avbr() {
 	echo "Setting $FILE to be transcoded using the software x264-avbr option."
 	echo ""
 	
-	strX264AVBRActive="yes"
+	echo "strX264AVBRActive,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+
 	
 	echo "---------------------------------------------------------------------------------------------------------------------------------------"
 
@@ -1455,19 +1468,20 @@ other-transcode_commands() {
 	do
 		str05File=${str05FileName:2}
 		FILE=${dirProcessing}/${str05File}
+		str05RawFilename=`echo $FILE | rev | cut -d'/' -f 1 | rev`
+		str05RawName=`echo $str05RawFilename | sed 's/\.mkv//g'`
 		
 		if [ "$strBatchMode" = "On" ]
 		then
 			# BatchMode is ACTIVE
 			dirWinWorkDir="F:"
 			strWinFile="${dirWinWorkDir}\\${str05File}"
+			strBatchOverrideLocation="${dirMediaDir}/Transcoding/Overrides"
 		else
 			strWinFile="${dirWinWorkDir}\\04_ReadyForTranscoding\\${str05File}"
 
 		fi
-		
-		strRawFilename=`echo $FILE | rev | cut -d'/' -f 1 | rev`
-		strRawName=`echo $strRawFilename | sed 's/\.mkv//g'`
+	
 
 		IFS=$'\n'
 				
@@ -1487,7 +1501,8 @@ other-transcode_commands() {
   		str05SubtitleEnglishPresence=""
   		str05SubtitleSDHPresence=""
   		str05SubtitleCommentaryPresence=""
-  		
+  		str05OverrideFile=""
+
   		
   		# In order to determine the channel width of AD and Commentary audio streams, there's an assumption that there'll only ever be one (1) AD track named "AD"
   		# and so the jq search below is for "AD" only, uppercase. In the very unlikely event that two audio streams are called "AD" (and not AD1, AD2), then the sort -u
@@ -1527,9 +1542,27 @@ other-transcode_commands() {
 		#  - one video track is present -> audio track numbering for other-transcode will match the ffprobe index numbers
 		#  - this script will run on a Mac to generate commands for an Nvidia-enabled PC
 		#  - FFmpeg doesn’t dynamically reposition and scale the overlay like HandBrake. As a result, --crop auto cannot be used where burn-in subtitles is needed.
+		#  - If a commands override file exists, then those variables will be imported and used further down.
+
+
+		if [ "$strBatchMode" = "On" ]
+		then
+			str05OverrideFile="${strBatchOverrideLocation}/${str05RawName}.other-transcode.override.command.txt"
+		else	
+			str05OverrideFile="$dirOutboxCommands/${str05RawName}.other-transcode.override.command.txt"
+		fi
+			
+		if [ -f $str05OverrideFile ]
+		then
+			strSetCopyVideo=$( grep strSetCopyVideo $str05OverrideFile | cut -d"," -f2 2>&1)
+			strX264AVBRActive=$( grep strX264AVBRActive $str05OverrideFile | cut -d"," -f2 2>&1)
+			strSetMainAudioTrackCopy=$( grep strSetMainAudioTrackCopy $str05OverrideFile | cut -d"," -f2 2>&1)
+		fi	
+
 
   		declare -a arrHwTranscodeCommand=()
   		
+   		 		
   		if [[ "$strX264AVBRActive" = "true" ]]
   			then
   			arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --x264-avbr --crop auto )
@@ -1559,7 +1592,6 @@ other-transcode_commands() {
 		then
 			strMainAudioOriginalSetting="=original"			
 		fi
-		
 		
 		case $str05DefaultAudioTrackCodec in
 		
@@ -1765,15 +1797,16 @@ other-transcode_commands() {
 			echo "  - ${strRawName}"
 		fi
 
+
+		echo "${arrHwTranscodeRbCommand[@]}" > $dirOutboxCommands/${str05RawName}.other-transcode.command.txt
+
 		# Unset Variables for next iteration
 		unset strSetCopyVideo
 		unset strX264AVBRActive
 		unset strSetMainAudioTrackCopy
 		unset strMainAudioOriginalSetting
+		unset str05OverrideFile
 		
-
-		echo "${arrHwTranscodeRbCommand[@]}" > $dirOutboxCommands/${strRawName}.other-transcode.command.txt
-
   		  		
   		if [ -f ${dirProcessing}/$str05FileName ]
 		then
@@ -1782,325 +1815,6 @@ other-transcode_commands() {
   		  				
 	    read line </dev/null
 	done
-
-}
-
-
-other-transcode_commands2() {
-
-
-	strRawFilename=`echo $FILE | rev | cut -d'/' -f 1 | rev`
-	strRawName=`echo $strRawFilename | sed 's/\.mkv//g'`
-
-	echo "*******************************************************************************"
-	echo "Building the other-transcode command for: " 
-	echo "  - $strRawName"
-
-
-	strWinFile="${dirWinWorkDir}\\04_ReadyForTranscoding\\${strRawFilename}"
-
-	IFS=$'\n'
-			
-	# Variables	
-  	
-  	str05FfprobeOutput=""
-  	str05DefaultVideoCodec=""
-  	str05DefaultAudioTrackIndex=""
-  	str05DefaultAudioTrackCodec=""
-  	str05DefaultAudioTrackChannelLayout=""
-  	str05DefaultAudioTrackAudioCommentaryPresence=""
-  	str05DefaultAudioTrackCommentaryChannelLayout=""
-  	str05DefaultAudioTrackAudioADPresence=""
-  	str05DefaultAudioTrackADChannelLayout=""
-  	str05DefaultAudioTrackSubForcedFlagPresence=""
-  	str05ProgressiveOrInterlace=""
-  	str05SubtitleEnglishPresence=""
-  	str05SubtitleSDHPresence=""
-  	str05SubtitleCommentaryPresence=""
-  	
-  	
-  	# In order to determine the channel width of AD and Commentary audio streams, there's an assumption that there'll only ever be one (1) AD track named "AD"
-  	# and so the jq search below is for "AD" only, uppercase. In the very unlikely event that two audio streams are called "AD" (and not AD1, AD2), then the sort -u
-  	# will determine the final channel width.
-  	#
-  	# A similar process exists for Commentary audio streams but this could be a little more complex because it's common to have multiple Commentary streams
-  	# and while each is named with "Commentary" or "commentary", there could be a difference in channel widths. However, it's very unlikely that a BR movie
-  	# with e.g. three commentary tracks would be a mixture of Surround 5.1 and stereo. If it is, it's a rarity. So the variable has a sort -u in place to 
-  	# make the value unique instead of a list from jq should 2 or more exist. This uniqueness has a minor risk of getting the width wrong if there's a mix
-  	# of channel widths so it's wise to check the corresponding auto-generated commands in these rate scenarios. If there is a mix, then it's probably 
-  	# going to require manual intervention to have sets of --add-audio flags looking for more details text strings to uniquely identify the string and then
-  	# manually assign the width (=stereo|surround) by stream.
-  	
-  	
-  	declare -i str05DefaultAudioTrackAudioCommentaryPresence
-  	
-  	str05FfprobeOutput=$( step4_ffprobe_command $FILE )
-  	str05DefaultVideoCodec=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="video") | .codec_name' )
-  	str05DefaultAudioTrackIndex=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .index' )
-  	str05DefaultAudioTrackCodec=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .codec_name' )
-  	str05DefaultAudioTrackChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .channel_layout' )
-  	str05DefaultAudioTrackAudioCommentaryPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio") | .tags.title' | grep -i "Commentary" | wc -l )
- 	str05DefaultAudioTrackCommentaryChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and contains(.tags.title="ommentary")) | .channel_layout' | sort -u )
-
-  	str05DefaultAudioTrackAudioADPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio") | .tags.title' | grep -w "AD" | wc -l )
-  	str05DefaultAudioTrackADChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .tags.title=="AD") | .channel_layout' | sort -u )
-
-  	str05DefaultAudioTrackSubForcedFlagPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .disposition.forced' | grep -w "1" | wc -l )
-  	str05DefaultAudioTrackLanguage=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .tags.language' )
-  	str05ProgressiveOrInterlace=$( echo "$str05FfprobeOutput" | jq -r '.streams[0].field_order' )
-	str05SubtitleEnglishPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep -i "English" | wc -l )
-	str05SubtitleSDHPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep "SDH" | wc -l )
-	str05SubtitleCommentaryPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep -i "Commentary" | wc -l )
-
-
-	# Assumptions 
-	#  - one video track is present -> audio track numbering for other-transcode will match the ffprobe index numbers
-	#  - this script will run on a Mac to generate commands for an Nvidia-enabled PC
-	#  - FFmpeg doesn’t dynamically reposition and scale the overlay like HandBrake. As a result, --crop auto cannot be used where burn-in subtitles is needed.
-
-  	declare -a arrHwTranscodeCommand=()
-  	
-  	if [[ "$strX264AVBRActive" = "true" ]]
-  		then
-  		arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --x264-avbr --crop auto )
-  		
-  	elif [[ "$strSetCopyVideo" = "true" ]]
-  	 	then
-  	 	arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --copy-video )
-
-  	else
-		# arrHwTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
-		arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
-	fi			
-
-	# AUDIO SET-UP
-	#   - check to ensure a FLAC track is being used in all cases for surround sound tracks. Ignore if there's a default stereo track
-	# 	- check to see if a track called AD or Commentary (or both) is present and include extra --add-audio options
-	# 	- if FLAC is the track codec, then use --eac3 otherwise if AC-3 is the main track, do no include --eac3
-	#   - by default, --add-audio downsamples to stereo. I would like to retain Surround sound 5.1 if the track is in 5.1.
-			
-	# Set up main audio and stereo options
-	
-	# The channel layout can be 7.1, 5.1, stereo or mono so the addition of an additional stereo track should
-	# only apply if the layout is 7.1 or 5.1 only. No stereo track should be added to an existing stereo or mono
-	# source.
-	
-	if [[ "$strSetMainAudioTrackCopy" = "true" ]]
-	then
-		strMainAudioOriginalSetting="=original"
-	fi
-	
-	
-	case $str05DefaultAudioTrackCodec in
-	
-		flac)
-			if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
-			then
-				arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
-			else
-				arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
-			fi	
-			;;
-		eac3)
-			if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
-			then
-				arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
-			else
-				arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
-			fi	
-			;;				
-		ac3)
-			if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
-			then
-				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
-			else
-				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
-			fi	
-			;;	
-		dts)
-			if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
-			then
-				arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
-			else
-				arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
-			fi	
-			;;
-		truehd)
-			if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
-			then
-				arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
-			else
-				arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
-			fi	
-			;;				
-		pcm_s16le)
-			arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
-			;;
-			
-		*)
-			echo "*********************************************************************************"
-			echo "WARNING:    "
-			echo ""
-			echo "$FILE"
-			echo ""
-			echo "The Default audio track is neither FLAC, EAC3, AC-3, DTS, TrueHD nor PSM_S16LE"
-			echo ""
-			echo "Please check ... exiting now"
-			echo "*********************************************************************************"
-			exit 1		
-			;;
-	esac
-	
-	# Check for a track called "Commentary" and/or "AD" ... exact matches only
-	# By default, these are set to stereo but retention of the underlying surround or stereo is important
-
-	str05AudioTrackChannelLayoutChoice1="7.1(side)"
-	str05AudioTrackChannelLayoutChoice2="5.1(side)"
-
-	if [ "$str05DefaultAudioTrackAudioCommentaryPresence" -ge 1 ]
-	then
-		case $str05DefaultAudioTrackCommentaryChannelLayout in
-		
-			${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
-				arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=surround )
-				;;
-
-			stereo)
-				arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=stereo )
-				;;
-
-			mono)
-				arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
-				;;
-
-			*)	
-				arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
-				;;	
-		esac	
-	fi
-
-	if [ "$str05DefaultAudioTrackAudioADPresence" -ge 1 ]
-	then
-		case $str05DefaultAudioTrackADChannelLayout in
-		
-			${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
-				arrHwTranscodeRbCommand+=(--add-audio \"AD\"=surround )
-				;;
-				
-			stereo)
-				arrHwTranscodeRbCommand+=(--add-audio \"AD\"=stereo )
-				;;
-				
-			mono)
-				arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
-				;;
-				
-			*)	
-				arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
-				;;	
-		esac	
-	fi
-	
-
-	# FORCED TRACK SUB-TITLE SET-UP
-	# FFmpeg doesn’t dynamically reposition and scale the overlay like HandBrake. 
-	# As a result, --crop auto cannot be used if the forced-subtitle flag is set and burn-in applied.
-	# For all other cases, --crop auto is applied below instead. 
-	#
-	# [2019.09.25] - removed from defaults as testing has shown
-	# that there's a 30% drop-off in fps when crops > 55 pixels are applied. As a result, full frame will be the DEFAULT
-	# to retain max fps speed but also to prevent subtitle positional issues with ffmpeg.
-	
-	if [ "$str05DefaultAudioTrackSubForcedFlagPresence" -eq "1" ]
-	then
-		arrHwTranscodeRbCommand+=(--burn-subtitle auto)
-	fi
-
-
-	# Addition of specific subtitles covering "English", "SDH" and "Commentary"
-	# The vast majority of subtitle streams contain one or more subtitles and these are labeled in a standard/consistent way using 
-	# "English" or "SDH" or some text with "Commentary" in its title.
-	# This is the norm for the majority of transcodes. 
-	#
-	# However, when the main language is NOT English (e.g. Chinese, Japanese, French, Swedish etc.)
-	# then I'll burn-in the default English or SDH subtitle track by setting it as a Forced Subtitle in the interactive section.
-	# As a result, we need to check the language of the default audio track's language setting and if it's not English (eng), 
-	# the following subtitle(s) are added if they are available:
-	# - "Commentary"
-	#		
-	# But, in the case of non-English default audio streams, if there is no forced flag, then the full compliment of possible subtitles 
-	# ("English", "SDH", "Commentary") can also be added so that an English PGS is present to be manually set when watching the 
-	# transcoded movie.
-	
-			
-	case $str05DefaultAudioTrackLanguage in
-		eng)
-			if [ "$str05SubtitleEnglishPresence" -eq "1" ]
-			then
-				arrHwTranscodeRbCommand+=(--add-subtitle \"English\")
-			fi
-			
-			if [ "$str05SubtitleSDHPresence" -eq 1 ]
-			then
-				arrHwTranscodeRbCommand+=(--add-subtitle \"SDH\")
-			fi
-			
-			if [ "$str05SubtitleCommentaryPresence" -ge 1 ]
-			then
-				arrHwTranscodeRbCommand+=(--add-subtitle \"Commentary\")
-			fi
-			;;
-		*)
-			if [ "$str05DefaultAudioTrackSubForcedFlagPresence" -eq "1" ]
-			then
-				if [ "$str05SubtitleCommentaryPresence" -ge 1 ]
-				then
-					arrHwTranscodeRbCommand+=(--add-subtitle \"Commentary\")
-				fi
-			else
-				if [ "$str05SubtitleEnglishPresence" -eq "1" ]
-				then
-					arrHwTranscodeRbCommand+=(--add-subtitle \"English\")
-				fi
-			
-				if [ "$str05SubtitleSDHPresence" -eq 1 ]
-				then
-					arrHwTranscodeRbCommand+=(--add-subtitle \"SDH\")
-				fi
-			
-				if [ "$str05SubtitleCommentaryPresence" -ge 1 ]
-				then
-					arrHwTranscodeRbCommand+=(--add-subtitle \"Commentary\")
-				fi
-			fi
-			;;
-	esac
-	
-
-  	# CHECK FOR INTERLACED (720i or 1080i) CONTENT
-  	# The expectation for field_order is "progressive" but if any of the interlaced options are found,
-  	# deinterlacing will be needed. "field_order" values include 'tt', 'bb', 'tb' and 'bt' for interlaced content
-  	# or "progressive"
-  	  	
-	if [ "$str05ProgressiveOrInterlace" != "progressive" ]
-	then
-		arrHwTranscodeRbCommand+=(--deinterlace)
-	fi
-
-
-	# Unset Variables for next iteration
-	unset strSetCopyVideo
-	unset strX264AVBRActive
-	unset strSetMainAudioTrackCopy
-	unset strMainAudioOriginalSetting
-	
-	echo "${arrHwTranscodeRbCommand[@]}" > $dirOutboxCommands/${strRawName}.other-transcode.command.txt
-  	  		
-  	if [ -f ${dirProcessing}/$strRawFilename ]
-	then
-		mv ${dirProcessing}/$strRawFilename ${dirReadyForTranscoding}/${strRawFilename}
-	fi
-  		  				
 
 }
 
@@ -2116,9 +1830,9 @@ other-transcode_commands_concatenate () {
 	if [ -f $dirOutboxCommands/commands.bat ]
 	then
 		rm $dirOutboxCommands/commands.bat
-		cat $dirOutboxCommands/*.command.txt >> $dirOutboxCommands/commands.bat
+		cat $dirOutboxCommands/*.other-transcode.command.txt >> $dirOutboxCommands/commands.bat
 	else
-		cat $dirOutboxCommands/*.command.txt >> $dirOutboxCommands/commands.bat
+		cat $dirOutboxCommands/*.other-transcode.command.txt >> $dirOutboxCommands/commands.bat
 	fi
 
 	echo " "
@@ -2745,13 +2459,13 @@ copy_commands_to_media() {
 	# Source Directory
 	dirSourceCommands=$( echo $dirReadyForTranscoding | sed 's/\/04_ReadyForTranscoding/\/03_Outbox\/Commands/g' )
 
-	# Destination Directory
+	# Destination Directories
 	dirDestinationCommands="$dirMediaDir/Transcoding/Commands"
-
+	dirDestinationOverrides="$dirMediaDir/Transcoding/Overrides"
 	
 	cd $dirSourceCommands
 
-	for strP02FileName in `find . -type f -name "*.command.txt" | sed 's/\.\///g' | sort` 
+	for strP02FileName in `find . -type f -name "*.other-transcode.command.txt" | sed 's/\.\///g' | sort` 
 		do
 			if [ ! -f $dirDestinationCommands/$strP02FileName ]
 			then
@@ -2780,6 +2494,41 @@ copy_commands_to_media() {
 	  		
 		    read line </dev/null
 		done
+
+
+	for strP02FileName2 in `find . -type f -name "*.other-transcode.override.command.txt" | sed 's/\.\///g' | sort` 
+		do
+			if [ ! -f $dirDestinationOverrides/$strP02FileName2 ]
+			then
+				if cp -v -i $dirSourceCommands/$strP02FileName2 $dirDestinationOverrides/$strP02FileName2
+				then
+					echo "Copy successful"
+					rm -v $dirSourceCommands/$strP02FileName2
+				else
+					echo "Copy failure, exit status $?"
+					exit
+				fi		
+			else
+				strTimestamp=$(date +%Y.%m.%d_%H%M%S)
+				mv -v -i $dirDestinationOverrides/$strP02FileName2 $dirDestinationOverrides/${strTimestamp}-${strP02FileName2}
+				
+				if cp -v -i $dirSourceCommands/$strP02FileName2 $dirDestinationOverrides/$strP02FileName2
+				then
+					echo "Copy successful"
+					rm -v $dirSourceCommands/$strP02FileName2
+				else
+					echo "Copy failure, exit status $?"
+					exit
+				fi
+							
+			fi	
+	  		
+		    read line </dev/null
+		done
+
+
+
+
 
 	if [ -f $dirSourceCommands/commands.bat ]
 	then
