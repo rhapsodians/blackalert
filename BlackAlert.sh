@@ -562,10 +562,7 @@ Please select one of the following:
 	6. Copy original video (no video transcoding)
 	7. AUDIO Options
 		- Copy the main audio track (no audio transcoding)
-		- Copy a specific audio track (no audio transcoding)
 		- Copy all audio tracks (no audio transcoding)
-		- Add audio by language
-		- Add audio with titles containing string
 		- Change Audio Format defaults 		
 	8. MORE Options
 		- Create single/unified mkvpropedit script
@@ -656,21 +653,18 @@ AUDIO OPTIONS
 Please select one of the following:
 
 	1. Copy the main audio track (no transcoding)
-	2. Copy a specific audio track (no transcoding)
-	3. Copy all audio tracks (no transcoding)
-	4. Add audio by language
-	5. Add audio with titles containing string
-	6. Change Audio Format defaults 		
-	7. Back
+	2. Copy all audio tracks (no transcoding)
+	3. Change Audio Format defaults 		
+	4. Back
 	0. Quit
 
 =================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-7] > "
+	  read -p "Enter selection [0-4] > "
 
-  		if [[ $REPLY =~ ^[0-9]$ ]]; then
+  		if [[ $REPLY =~ ^[0-4]$ ]]; then
     	case $REPLY in
      	1)
            	step4_ffprobe_tsv
@@ -679,7 +673,7 @@ _EOF_
           	;;
       	2)
       	  	step4_ffprobe_tsv
-      	  	step4_xxx
+      	  	step4_copy_all_audio_tracks
           	continue
           	;;
       	3)
@@ -688,21 +682,6 @@ _EOF_
           	continue
           	;;
         4)
-      	  	step4_ffprobe_tsv
-      	  	step4_xxx
-          	continue
-          	;;
-        5)
-      	  	step4_ffprobe_tsv
-      	  	step4_xxx
-      	  	continue
-          	;;	
-        6)
-        	step4_ffprobe_tsv
-      	  	step4_xxx
-        	continue
-          	;;
-        7)
         	break
         	;;	
         0)
@@ -1277,7 +1256,7 @@ step4_copy_main_audio() {
 	if [ $strCurrentAudioDefaultIndexCount -eq 1 ] 
 		then
 			echo "strSetMainAudioTrackCopy,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
-			echo "FILE:  $dirOutboxCommands/${strRawName}.other-transcode.override.command.txt"
+			echo "FILE:  $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt"
 
 	else 
 		echo "More than one default track has been found."
@@ -1292,6 +1271,60 @@ step4_copy_main_audio() {
 
 }
 
+
+step4_copy_all_audio_tracks() {
+
+	# List of audio tracks
+	# Tracks can be either the default track or any other (identified by index)
+	#  -> need to know which one is the default because --main-audio 1=original would be used instead of 
+	#     --add-audio all=original
+	#  -> If it's the main audio track, then the stereo pair will still be created
+	#  -> --add-audio "Commentary" and --add-audio "AD" flags will be disabled
+
+
+	# Define the variables for this function
+	strCheckCurrentAudioDefaultIndex=""
+	strCurrentAudioDefaultIndexNumber=""
+	strCopyAllAudioChoice=""
+	strCopyAllOtherAudio=""
+
+	# Identify the current default audio track and index number
+	local strCheckCurrentAudioDefaultIndex=$( grep ^audio $strFfprobeTsvFile | cut -f8 | grep "1" | wc -l )
+	strCurrentAudioDefaultIndexNumber=$( grep ^audio $strFfprobeTsvFile | cut -f2,8 | grep "\t1" | cut -f1 )	
+	
+	echo ""
+	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	step4_ffprobe_command $FILE | step4_jq_selectstream_command audio
+	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""	
+	
+	
+	read -p "Copy ALL audio tracks using (=original) .... is this correct? [y|n] > " strCopyAllAudioChoice
+	if [[ $strCopyAllAudioChoice =~ ^[yYnN]$ ]]; then
+		case $strCopyAllAudioChoice in
+			y|Y) 
+				echo "CONFIRMED:  All audio tracks will be COPIED with no transcoding."
+				echo ""
+				step4_copy_main_audio
+				strCopyAllOtherAudio="true"
+				echo "strCopyAllOtherAudio,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+				;;		
+			n|N)
+				echo "DECLINED:  All audio tracks will NOT be COPIED "
+				echo ""
+				break
+    	  		;;	
+			*) 
+				exit
+				;;
+		esac	
+	else
+    	echo "Invalid entry."
+    	sleep $DELAY
+  	fi	
+	
+
+}
 
 
 
@@ -1554,20 +1587,22 @@ other-transcode_commands() {
 			
 		if [ -f $str05OverrideFile ]
 		then
-			strSetCopyVideo=$( grep strSetCopyVideo $str05OverrideFile | cut -d"," -f2 2>&1)
-			strX264AVBRActive=$( grep strX264AVBRActive $str05OverrideFile | cut -d"," -f2 2>&1)
-			strSetMainAudioTrackCopy=$( grep strSetMainAudioTrackCopy $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05SetCopyVideo=$( grep strSetCopyVideo $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05X264AVBRActive=$( grep strX264AVBRActive $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05SetMainAudioTrackCopy=$( grep strSetMainAudioTrackCopy $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05CopyAllOtherAudio=$( grep strCopyAllOtherAudio $str05OverrideFile | cut -d"," -f2 2>&1)
+			
 		fi	
 
 
   		declare -a arrHwTranscodeCommand=()
   		
    		 		
-  		if [[ "$strX264AVBRActive" = "true" ]]
+  		if [[ "$str05X264AVBRActive" = "true" ]]
   			then
   			arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --x264-avbr --crop auto )
   			
-  		elif [[ "$strSetCopyVideo" = "true" ]]
+  		elif [[ "$str05SetCopyVideo" = "true" ]]
   		 	then
   		 	arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --copy-video )
 
@@ -1588,55 +1623,82 @@ other-transcode_commands() {
 		# only apply if the layout is 7.1 or 5.1 only. No stereo track should be added to an existing stereo or mono
 		# source.
 		
-		if [[ "$strSetMainAudioTrackCopy" = "true" ]]
+		if [[ "$str05SetMainAudioTrackCopy" = "true" ]]
 		then
-			strMainAudioOriginalSetting="=original"			
+			str05MainAudioOriginalSetting="=original"			
 		fi
+		
+		echo "str05CopyAllOtherAudio:   $str05CopyAllOtherAudio"
 		
 		case $str05DefaultAudioTrackCodec in
 		
 			flac)
 				if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
 				then
-					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})
+				elif [ "$str05CopyAllOtherAudio" = "true" ]
+				then
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio all=original)	
 				else
-					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
 				fi	
 				;;
 			eac3)
 				if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
 				then
-					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})
+				elif [ "$str05CopyAllOtherAudio" = "true" ]
+				then	
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio all=original)
+					
 				else
-					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
 				fi	
 				;;				
 			ac3)
 				if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
 				then
-					arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
+					arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})
+				elif [ "$str05CopyAllOtherAudio" = "true" ]
+				then	
+					arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio all=original)
+						
 				else
-					arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
+					arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
 				fi	
 				;;	
 			dts)
 				if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
 				then
-					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})
+				elif [ "$str05CopyAllOtherAudio" = "true" ]
+				then	
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio all=original)
+
 				else
-					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
 				fi	
 				;;
 			truehd)
 				if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
 				then
-					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})
+				elif [ "$str05CopyAllOtherAudio" = "true" ]
+				then
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio all=original)
+
 				else
-					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
+					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
 				fi	
 				;;				
 			pcm_s16le)
-				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${strMainAudioOriginalSetting})
+				if [ "$str05CopyAllOtherAudio" = "true" ]
+				then
+					arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio all=original)
+
+				else
+					arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})
+				fi	
 				;;
 				
 			*)
@@ -1659,49 +1721,53 @@ other-transcode_commands() {
 		str05AudioTrackChannelLayoutChoice1="7.1(side)"
 		str05AudioTrackChannelLayoutChoice2="5.1(side)"
 
-		if [ "$str05DefaultAudioTrackAudioCommentaryPresence" -ge 1 ]
+		if [ "$str05CopyAllOtherAudio" != "true" ]
 		then
-			case $str05DefaultAudioTrackCommentaryChannelLayout in
+
+			if [ "$str05DefaultAudioTrackAudioCommentaryPresence" -ge 1 ]
+			then
+				case $str05DefaultAudioTrackCommentaryChannelLayout in
+				
+					${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
+						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=surround )
+						;;
+
+					stereo)
+						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=stereo )
+						;;
+
+					mono)
+						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
+						;;
+
+					*)	
+						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
+						;;	
+				esac	
+			fi
+
+			if [ "$str05DefaultAudioTrackAudioADPresence" -ge 1 ]
+			then
+				case $str05DefaultAudioTrackADChannelLayout in
 			
-				${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
-					arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=surround )
-					;;
-
-				stereo)
-					arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=stereo )
-					;;
-
-				mono)
-					arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
-					;;
-
-				*)	
-					arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
-					;;	
-			esac	
-		fi
-
-		if [ "$str05DefaultAudioTrackAudioADPresence" -ge 1 ]
-		then
-			case $str05DefaultAudioTrackADChannelLayout in
-			
-				${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
-					arrHwTranscodeRbCommand+=(--add-audio \"AD\"=surround )
-					;;
+					${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
+						arrHwTranscodeRbCommand+=(--add-audio \"AD\"=surround )
+						;;
 					
-				stereo)
-					arrHwTranscodeRbCommand+=(--add-audio \"AD\"=stereo )
-					;;
+					stereo)
+						arrHwTranscodeRbCommand+=(--add-audio \"AD\"=stereo )
+						;;
 					
-				mono)
-					arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
-					;;
+					mono)
+						arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
+						;;
 					
-				*)	
-					arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
-					;;	
-			esac	
-		fi
+					*)	
+						arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
+						;;	
+				esac	
+			fi
+		fi	
 		
 
 		# FORCED TRACK SUB-TITLE SET-UP
@@ -1792,26 +1858,28 @@ other-transcode_commands() {
 
 		if [ "$str05ProgressiveOrInterlace" != "progressive" ]
 		then
-			echo "  - ${strRawName}    (with deinterlace included)"
+			echo "  - ${str05RawName}    (with deinterlace included)"
 		else
-			echo "  - ${strRawName}"
+			echo "  - ${str05RawName}"
 		fi
 
 
 		echo "${arrHwTranscodeRbCommand[@]}" > $dirOutboxCommands/${str05RawName}.other-transcode.command.txt
 
 		# Unset Variables for next iteration
-		unset strSetCopyVideo
-		unset strX264AVBRActive
-		unset strSetMainAudioTrackCopy
-		unset strMainAudioOriginalSetting
+		unset str05SetCopyVideo
+		unset str05X264AVBRActive
+		unset str05SetMainAudioTrackCopy
+		unset str05MainAudioOriginalSetting
 		unset str05OverrideFile
+		unset str05CopyAllOtherAudio
+		unset strCurrentAudioDefaultIndexNumber
 		
   		  		
-  		if [ -f ${dirProcessing}/$str05FileName ]
-		then
-			mv ${dirProcessing}/$str05FileName ${dirReadyForTranscoding}/${str05File}
-		fi
+#  		if [ -f ${dirProcessing}/$str05FileName ]
+#		then
+#			mv ${dirProcessing}/$str05FileName ${dirReadyForTranscoding}/${str05File}
+#		fi
   		  				
 	    read line </dev/null
 	done
