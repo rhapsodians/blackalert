@@ -607,16 +607,17 @@ _EOF_
         6)
         	step4_ffprobe_tsv
         	step4_copy_original_video
-#        	step4_mkvpropedit_unfied_command
         	continue
           	;;
         7)
+        	step4_ffprobe_tsv
         	step4_track_editing_AudioOptions
-#        	step4_usex264-avbr
         	continue
         	;;  		  	
         8)
-        	echo "what goes here???"
+        	step4_ffprobe_tsv
+        	step4_track_editing_MoreOptions
+        	continue
         	;;
         9)  step4_ffprobe_tsv
         	step4_mkvpropedit_unfied_command
@@ -679,6 +680,65 @@ _EOF_
       	3)
       	  	step4_ffprobe_tsv
       	  	step4_EAC3plusAAC
+          	continue
+          	;;
+        4)
+        	break
+        	;;	
+        0)
+        	exit
+        	;;	
+    	esac
+  	else
+    	echo "Invalid entry"
+    	sleep $DELAY
+  	fi
+	done
+
+}
+
+
+
+step4_track_editing_MoreOptions() {
+	
+	while true; do
+	step4_ffprobe_summary
+	
+	cat << _EOF_
+
+=================================================================
+AUDIO OPTIONS
+=================================================================
+
+Please select one of the following:
+
+	1. Create single/unified mkvpropedit script
+	2. Use --x264-avbr software encoding
+	3. Disable forced subtitle burn-in	
+	4. Back
+	0. Quit
+
+=================================================================
+
+_EOF_
+
+	  read -p "Enter selection [0-4] > "
+
+  		if [[ $REPLY =~ ^[0-4]$ ]]; then
+    	case $REPLY in
+     	1)
+           	step4_ffprobe_tsv
+      	  	step4_mkvpropedit_unfied_command
+          	continue
+          	;;
+      	2)
+      	  	step4_ffprobe_tsv
+      	  	step4_usex264-avbr
+          	continue
+          	;;
+      	3)
+      	  	step4_ffprobe_tsv
+      	  	step4_DisableForcedSubtitleAutoBurnIn
           	continue
           	;;
         4)
@@ -1345,6 +1405,19 @@ step4_EAC3plusAAC() {
 
 
 
+step4_DisableForcedSubtitleAutoBurnIn() {
+
+	
+	echo "strDisableForcedSubtitleAutoBurnIn,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "Forced subtitle auto burn-in will be disabled"
+	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""	
+
+}
+
+
 
 
 
@@ -1486,7 +1559,6 @@ step4_usex264-avbr() {
 	echo ""
 	
 	echo "strX264AVBRActive,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
-
 	
 	echo "---------------------------------------------------------------------------------------------------------------------------------------"
 
@@ -1611,7 +1683,7 @@ other-transcode_commands() {
 			str05SetMainAudioTrackCopy=$( grep strSetMainAudioTrackCopy $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05CopyAllOtherAudio=$( grep strCopyAllOtherAudio $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05EAC3SurroundAACStereoMono=$( grep strEAC3SurroundAACStereoMono $str05OverrideFile | cut -d"," -f2 2>&1)
-	
+			str05DisableForcedSubtitleAutoBurnIn=$( grep strDisableForcedSubtitleAutoBurnIn $str05OverrideFile | cut -d"," -f2 2>&1)
 		fi	
 
 
@@ -1660,7 +1732,7 @@ other-transcode_commands() {
 		
 		case $str05DefaultAudioTrackCodec in
 		
-			flac)
+			flac | ac3 | dts| truehd)
 				if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ] && [ "$str05EAC3SurroundAACStereoMono" = "true" ]
 				then
 					arrHwTranscodeRbCommand+=(--eac3)
@@ -1676,30 +1748,6 @@ other-transcode_commands() {
 					arrHwTranscodeRbCommand+=(--eac3-all)	
 				fi	
 				;;				
-			ac3)
-				if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ] && [ "$str05EAC3SurroundAACStereoMono" = "true" ]
-				then
-					arrHwTranscodeRbCommand+=()
-				else
-					arrHwTranscodeRbCommand+=()	
-				fi	
-				;;			
-			dts)
-				if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ] && [ "$str05EAC3SurroundAACStereoMono" = "true" ]
-				then
-					arrHwTranscodeRbCommand+=(--eac3)
-				else
-					arrHwTranscodeRbCommand+=(--eac3-all)	
-				fi	
-				;;
-			truehd)
-				if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ] && [ "$str05EAC3SurroundAACStereoMono" = "true" ]
-				then
-					arrHwTranscodeRbCommand+=(--eac3)
-				else
-					arrHwTranscodeRbCommand+=(--eac3-all)	
-				fi	
-				;;
 			pcm_s16le)
 				if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ] && [ "$str05EAC3SurroundAACStereoMono" = "true" ]
 				then
@@ -1722,6 +1770,31 @@ other-transcode_commands() {
 				exit 1		
 				;;
 		esac		
+	
+	
+	
+		# Bitrate Overrides
+		# ---------------------------------------------------
+		# 
+		# For all EAC-3:     Surround=640, Stereo=224 and Mono=128  (other-transcode defaults)
+		# For EAC-3 + AAC:   Surround=640 EAC-3, Stereo=256 AAC and Mono=128 AAC  (other-transcode defaults)
+		#
+		# My settings will increase the EAC-3 stereo bitrate from 224->256 and mono from 128->160
+		
+		
+		if [[ "$str05EAC3SurroundAACStereoMono" != "true" ]]
+		then
+			case $str05DefaultAudioTrackChannelLayout in
+				mono)
+							arrHwTranscodeRbCommand+=(--mono-bitrate 160)
+							;;			
+				*)					
+							arrHwTranscodeRbCommand+=(--stereo-bitrate 256)
+							;;
+			esac
+		fi	
+			
+	
 		
 		
 		# Main Audio Settings
@@ -1769,46 +1842,22 @@ other-transcode_commands() {
 		esac
 
 
+
 		# ADD Extra Stereo track from Main Audio
 		# ---------------------------------------------------
 		# 		
 		
 		case $str05DefaultAudioTrackCodec in
 		
-			flac)
-				if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
+			flac|eac3|ac3|dts|truehd|pcm_s16le)
+				if [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
 				then
-					arrHwTranscodeRbCommand+=(--add-audio ${str05DefaultAudioTrackIndex}=stereo)
-				fi	
-				;;
-			eac3)
-				if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
+					arrHwTranscodeRbCommand+=()					
+				elif [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ]
 				then
-					arrHwTranscodeRbCommand+=(--add-audio ${str05DefaultAudioTrackIndex}=stereo)
-				fi	
-				;;				
-			ac3)
-				if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
-				then
-					arrHwTranscodeRbCommand+=(--add-audio ${str05DefaultAudioTrackIndex}=stereo)
-				fi	
-				;;	
-			dts)
-				if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
-				then
-					arrHwTranscodeRbCommand+=(--add-audio ${str05DefaultAudioTrackIndex}=stereo)
-				fi	
-				;;
-			truehd)
-				if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
-				then
-					arrHwTranscodeRbCommand+=(--add-audio ${str05DefaultAudioTrackIndex}=stereo)
-				fi	
-				;;				
-			pcm_s16le)
-				if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
-				then
-					arrHwTranscodeRbCommand+=(--add-audio ${str05DefaultAudioTrackIndex}=stereo)
+					arrHwTranscodeRbCommand+=()
+				else
+					arrHwTranscodeRbCommand+=(--add-audio ${str05DefaultAudioTrackIndex}=stereo)					
 				fi	
 				;;
 				
@@ -1890,151 +1939,6 @@ other-transcode_commands() {
 
 
 		
-#		if [[ "$str05SetMainAudioTrackCopy" = "true" ]]
-#		then
-#			str05MainAudioOriginalSetting="=original"			
-#		fi
-#				
-#		case $str05DefaultAudioTrackCodec in
-#		
-#			flac)
-#				if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
-#				then
-#					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})
-#				elif [ "$str05CopyAllOtherAudio" = "true" ]
-#				then
-#					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio all=original)	
-#				else
-#					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
-#				fi	
-#				;;
-#			eac3)
-#				if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
-#				then
-#					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})
-#				elif [ "$str05CopyAllOtherAudio" = "true" ]
-#				then	
-#					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio all=original)
-#					
-#				else
-#					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
-#				fi	
-#				;;				
-#			ac3)
-#				if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
-#				then
-#					arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})
-#				elif [ "$str05CopyAllOtherAudio" = "true" ]
-#				then	
-#					arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio all=original)
-#						
-#				else
-#					arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
-#				fi	
-#				;;	
-#			dts)
-#				if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
-#				then
-#					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})
-#				elif [ "$str05CopyAllOtherAudio" = "true" ]
-#				then	
-#					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio all=original)
-#
-#				else
-#					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
-#				fi	
-#				;;
-#			truehd)
-#				if [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
-#				then
-#					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})
-#				elif [ "$str05CopyAllOtherAudio" = "true" ]
-#				then
-#					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio all=original)
-#
-#				else
-#					arrHwTranscodeRbCommand+=(--eac3 --main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio ${str05DefaultAudioTrackIndex}=stereo)
-#				fi	
-#				;;				
-#			pcm_s16le)
-#				if [ "$str05CopyAllOtherAudio" = "true" ]
-#				then
-#					arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting} --add-audio all=original)
-#
-#				else
-#					arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})
-#				fi	
-#				;;
-#				
-#			*)
-#				echo "*********************************************************************************"
-#				echo "WARNING:    "
-#				echo ""
-#				echo "$FILE"
-#				echo ""
-#				echo "The Default audio track is neither FLAC, EAC3, AC-3, DTS, TrueHD nor PSM_S16LE"
-#				echo ""
-#				echo "Please check ... exiting now"
-#				echo "*********************************************************************************"
-#				exit 1		
-#				;;
-#		esac
-#		
-#		# Check for a track called "Commentary" and/or "AD" ... exact matches only
-#		# By default, these are set to stereo but retention of the underlying surround or stereo is important
-#
-#		str05AudioTrackChannelLayoutChoice1="7.1(side)"
-#		str05AudioTrackChannelLayoutChoice2="5.1(side)"
-#
-#		if [ "$str05CopyAllOtherAudio" != "true" ]
-#		then
-#
-#			if [ "$str05DefaultAudioTrackAudioCommentaryPresence" -ge 1 ]
-#			then
-#				case $str05DefaultAudioTrackCommentaryChannelLayout in
-#				
-#					${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
-#						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=surround )
-#						;;
-#
-#					stereo)
-#						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=stereo )
-#						;;
-#
-#					mono)
-#						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
-#						;;
-#
-#					*)	
-#						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
-#						;;	
-#				esac	
-#			fi
-#
-#			if [ "$str05DefaultAudioTrackAudioADPresence" -ge 1 ]
-#			then
-#				case $str05DefaultAudioTrackADChannelLayout in
-#			
-#					${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
-#						arrHwTranscodeRbCommand+=(--add-audio \"AD\"=surround )
-#						;;
-#					
-#					stereo)
-#						arrHwTranscodeRbCommand+=(--add-audio \"AD\"=stereo )
-#						;;
-#					
-#					mono)
-#						arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
-#						;;
-#					
-#					*)	
-#						arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
-#						;;	
-#				esac	
-#			fi
-#		fi	
-		
-
 		# FORCED TRACK SUB-TITLE SET-UP
 		# FFmpeg doesn’t dynamically reposition and scale the overlay like HandBrake. 
 		# As a result, --crop auto cannot be used if the forced-subtitle flag is set and burn-in applied.
@@ -2044,10 +1948,13 @@ other-transcode_commands() {
 		# that there's a 30% drop-off in fps when crops > 55 pixels are applied. As a result, full frame will be the DEFAULT
 		# to retain max fps speed but also to prevent subtitle positional issues with ffmpeg.
 		
-		if [ "$str05DefaultAudioTrackSubForcedFlagPresence" -eq "1" ]
+		if [ "$str05DisableForcedSubtitleAutoBurnIn" != "true" ]
 		then
-			arrHwTranscodeRbCommand+=(--burn-subtitle auto)
-		fi
+			if [ "$str05DefaultAudioTrackSubForcedFlagPresence" -eq "1" ]
+			then
+				arrHwTranscodeRbCommand+=(--burn-subtitle auto)
+			fi
+		fi	
 
 
 		# Addition of specific subtitles covering "English", "SDH" and "Commentary"
@@ -2140,6 +2047,7 @@ other-transcode_commands() {
 		unset str05CopyAllOtherAudio
 		unset strCurrentAudioDefaultIndexNumber
 		unset str05EAC3SurroundAACStereoMono
+		unset str05DisableForcedSubtitleAutoBurnIn
 		
   		  		
 #  		if [ -f ${dirProcessing}/$str05FileName ]
