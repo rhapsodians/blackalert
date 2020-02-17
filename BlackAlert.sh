@@ -1269,7 +1269,7 @@ step4_copy_original_video() {
 	
 	# Define the variables for this function
 	strCheckVideoTrackCount=""
-	strSetCopyVideo=""	
+	SetCopyVideo=""	
 
 	# Identify the current forced subtitle and index number
 	strCheckVideoTrackCount=$( grep ^video $strFfprobeTsvFile | cut -f1 | wc -l )
@@ -1277,7 +1277,7 @@ step4_copy_original_video() {
 	if [ $strCheckVideoTrackCount -eq 1 ] 
 		then
 			echo "Output file:  $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt "
-			echo "strSetCopyVideo,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt 
+			echo "SetCopyVideo,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt 
 	elif [ $strCheckVideoTrackCount -ne 1 ]
 		then
 			echo "More than one video track has been found."
@@ -1303,7 +1303,7 @@ step4_copy_main_audio() {
 	# Define the variables for this function
 	strCurrentAudioDefaultIndexCount=""
 	strCurrentAudioDefaultIndex=""
-	strSetMainAudioTrackCopy=""	
+	SetMainAudioTrackCopy=""	
 
 	# Identify the current default audio track and index number
 	strFFprobeDetail_MainAudio=$(ffprobe -i "$FILE" -v error -show_format -show_streams -show_data -print_format json=compact=1 2>/dev/null)
@@ -1315,7 +1315,7 @@ step4_copy_main_audio() {
 	
 	if [ $strCurrentAudioDefaultIndexCount -eq 1 ] 
 		then
-			echo "strSetMainAudioTrackCopy,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+			echo "SetMainAudioTrackCopy,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
 			echo "FILE:  $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt"
 
 	else 
@@ -1346,7 +1346,7 @@ step4_copy_all_audio_tracks() {
 	strCheckCurrentAudioDefaultIndex=""
 	strCurrentAudioDefaultIndexNumber=""
 	strCopyAllAudioChoice=""
-	strCopyAllOtherAudio=""
+	CopyAllOtherAudio=""
 
 	# Identify the current default audio track and index number
 	local strCheckCurrentAudioDefaultIndex=$( grep ^audio $strFfprobeTsvFile | cut -f8 | grep "1" | wc -l )
@@ -1366,8 +1366,8 @@ step4_copy_all_audio_tracks() {
 				echo "CONFIRMED:  All audio tracks will be COPIED with no transcoding."
 				echo ""
 				step4_copy_main_audio
-				strCopyAllOtherAudio="true"
-				echo "strCopyAllOtherAudio,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+				CopyAllOtherAudio="true"
+				echo "CopyAllOtherAudio,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
 				;;		
 			n|N)
 				echo "DECLINED:  All audio tracks will NOT be COPIED "
@@ -1394,7 +1394,7 @@ step4_EAC3plusAAC() {
 	#
 	# To revert to surround EAC-3 plus AAC for stereo/mono, the --all-eac3 flag needs to change back to --eac3
 	
-	echo "strEAC3SurroundAACStereoMono,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo "EAC3SurroundAACStereoMono,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
 	echo ""
 	echo "---------------------------------------------------------------------------------------------------------------------------------------"
 	echo "EAC-3/Dolby Digital+ will be used for surround only. Stereo/Mono tracks will be AAC."
@@ -1408,7 +1408,7 @@ step4_EAC3plusAAC() {
 step4_DisableForcedSubtitleAutoBurnIn() {
 
 	
-	echo "strDisableForcedSubtitleAutoBurnIn,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo "DisableForcedSubtitleAutoBurnIn,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
 	echo ""
 	echo "---------------------------------------------------------------------------------------------------------------------------------------"
 	echo "Forced subtitle auto burn-in will be disabled"
@@ -1558,7 +1558,7 @@ step4_usex264-avbr() {
 	echo "Setting $FILE to be transcoded using the software x264-avbr option."
 	echo ""
 	
-	echo "strX264AVBRActive,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo "X264AVBRActive,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
 	
 	echo "---------------------------------------------------------------------------------------------------------------------------------------"
 
@@ -1678,12 +1678,12 @@ other-transcode_commands() {
 			
 		if [ -f $str05OverrideFile ]
 		then
-			str05SetCopyVideo=$( grep strSetCopyVideo $str05OverrideFile | cut -d"," -f2 2>&1)
-			str05X264AVBRActive=$( grep strX264AVBRActive $str05OverrideFile | cut -d"," -f2 2>&1)
-			str05SetMainAudioTrackCopy=$( grep strSetMainAudioTrackCopy $str05OverrideFile | cut -d"," -f2 2>&1)
-			str05CopyAllOtherAudio=$( grep strCopyAllOtherAudio $str05OverrideFile | cut -d"," -f2 2>&1)
-			str05EAC3SurroundAACStereoMono=$( grep strEAC3SurroundAACStereoMono $str05OverrideFile | cut -d"," -f2 2>&1)
-			str05DisableForcedSubtitleAutoBurnIn=$( grep strDisableForcedSubtitleAutoBurnIn $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05SetCopyVideo=$( grep SetCopyVideo $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05X264AVBRActive=$( grep X264AVBRActive $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05SetMainAudioTrackCopy=$( grep SetMainAudioTrackCopy $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05CopyAllOtherAudio=$( grep CopyAllOtherAudio $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05EAC3SurroundAACStereoMono=$( grep EAC3SurroundAACStereoMono $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05DisableForcedSubtitleAutoBurnIn=$( grep DisableForcedSubtitleAutoBurnIn $str05OverrideFile | cut -d"," -f2 2>&1)
 		fi	
 
 
@@ -1780,20 +1780,22 @@ other-transcode_commands() {
 		# For EAC-3 + AAC:   Surround=640 EAC-3, Stereo=256 AAC and Mono=128 AAC  (other-transcode defaults)
 		#
 		# My settings will increase the EAC-3 stereo bitrate from 224->256 and mono from 128->160
+		# No bitrate settings applied if all audio is being copied
 		
-		
-		if [[ "$str05EAC3SurroundAACStereoMono" != "true" ]]
+		if [ "$str05CopyAllOtherAudio" != "true" ]
 		then
-			case $str05DefaultAudioTrackChannelLayout in
-				mono)
+			if [[ "$str05EAC3SurroundAACStereoMono" != "true" ]]
+			then
+				case $str05DefaultAudioTrackChannelLayout in
+					mono)
 							arrHwTranscodeRbCommand+=(--mono-bitrate 160)
 							;;			
-				*)					
+					*)					
 							arrHwTranscodeRbCommand+=(--stereo-bitrate 256)
 							;;
-			esac
+				esac
+			fi	
 		fi	
-			
 	
 		
 		
@@ -1845,7 +1847,10 @@ other-transcode_commands() {
 
 		# ADD Extra Stereo track from Main Audio
 		# ---------------------------------------------------
-		# 		
+		# No stereo track if all audio is being copied.		
+		
+		if [ "$str05CopyAllOtherAudio" != "true" ]
+		then
 		
 		case $str05DefaultAudioTrackCodec in
 		
@@ -1874,6 +1879,7 @@ other-transcode_commands() {
 				exit 1		
 				;;
 		esac
+		fi
 		
 		
 		# ADD Commentary, AD and original options
