@@ -1,5 +1,8 @@
 # Change Log #
 
+## 0.27 ##
+
+
 ## 0.26 ##
 
 - Updated to include new options from `other-transcode` v0.3
