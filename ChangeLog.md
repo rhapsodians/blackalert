@@ -4,12 +4,10 @@
 
 - Updated to include new options from `other-transcode` v0.3
 - New and updated menus
-- Options for `--copy-video`, `--main-audio [TRACK]=original`
+- EAC-3 (Dolby Digital+) now the default for all audio
+- Options for `--copy-video`, `--main-audio [TRACK]=original`, `--add-audio all=original`, bitrate overrides, optionally disable subtitle forced burn-ins and ability to revert to 640 EAC3 surround, 256 AAC stereo and 128AAC mono.
 - Bug fix and upgrade to accurately determine the channel layout of "AD" and "Commentary" audio streams so the correct width (`=stereo|surround`)s set in the `--add-audio "AD"|"Commentary"` auto-generated flags.
 - Lots of minor tweaks and bug-fixes
-
-
-
 
 
 ## 0.25 ##
