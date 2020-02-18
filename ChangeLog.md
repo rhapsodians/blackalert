@@ -2,10 +2,11 @@
 
 ## 0.26 ##
 
+- Updated to include new options from `other-transcode` v0.3
 - New and updated menus
 - Options for `--copy-video`, `--main-audio [TRACK]=original`
 - Bug fix and upgrade to accurately determine the channel layout of "AD" and "Commentary" audio streams so the correct width (`=stereo|surround`)s set in the `--add-audio "AD"|"Commentary"` auto-generated flags.
-- Addition of notes in the script to explain the above in more detail.
+- Lots of minor tweaks and bug-fixes
 
 
 
