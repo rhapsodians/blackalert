@@ -1727,7 +1727,7 @@ other-transcode_commands() {
 
 		# Audio format
 		# ---------------------------------------------------
-		# The default is --eac3-all for certain codecs. Otherwise it's AC3 and/or AAC
+		# The default is --all-eac3 for certain codecs. Otherwise it's AC3 and/or AAC
 		# 
 		
 		case $str05DefaultAudioTrackCodec in
@@ -1737,7 +1737,7 @@ other-transcode_commands() {
 				then
 					arrHwTranscodeRbCommand+=(--eac3)
 				else
-					arrHwTranscodeRbCommand+=(--eac3-all)	
+					arrHwTranscodeRbCommand+=(--all-eac3)	
 				fi	
 				;;
 			eac3)
@@ -1745,7 +1745,7 @@ other-transcode_commands() {
 				then
 					arrHwTranscodeRbCommand+=()
 				else
-					arrHwTranscodeRbCommand+=(--eac3-all)	
+					arrHwTranscodeRbCommand+=(--all-eac3)	
 				fi	
 				;;				
 			pcm_s16le)
@@ -1770,33 +1770,7 @@ other-transcode_commands() {
 				exit 1		
 				;;
 		esac		
-	
-	
-	
-		# Bitrate Overrides
-		# ---------------------------------------------------
-		# 
-		# For all EAC-3:     Surround=640, Stereo=224 and Mono=128  (other-transcode defaults)
-		# For EAC-3 + AAC:   Surround=640 EAC-3, Stereo=256 AAC and Mono=128 AAC  (other-transcode defaults)
-		#
-		# My settings will increase the EAC-3 stereo bitrate from 224->256 and mono from 128->160
-		# No bitrate settings applied if all audio is being copied
 		
-		if [ "$str05CopyAllOtherAudio" != "true" ]
-		then
-			if [[ "$str05EAC3SurroundAACStereoMono" != "true" ]]
-			then
-				case $str05DefaultAudioTrackChannelLayout in
-					mono)
-							arrHwTranscodeRbCommand+=(--mono-bitrate 160)
-							;;			
-					*)					
-							arrHwTranscodeRbCommand+=(--stereo-bitrate 256)
-							;;
-				esac
-			fi	
-		fi	
-	
 		
 		
 		# Main Audio Settings
@@ -1861,6 +1835,9 @@ other-transcode_commands() {
 				elif [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ]
 				then
 					arrHwTranscodeRbCommand+=()
+				elif [ "$str05DefaultAudioTrackChannelLayout" = "3.0" ]
+				then
+					arrHwTranscodeRbCommand+=()
 				else
 					arrHwTranscodeRbCommand+=(--add-audio ${str05DefaultAudioTrackIndex}=stereo)					
 				fi	
@@ -1894,19 +1871,16 @@ other-transcode_commands() {
 			# Check for a track called "Commentary" and/or "AD" ... exact matches only
 			# By default, these are set to stereo but retention of the underlying surround or stereo is important
 
-			str05AudioTrackChannelLayoutChoice1="7.1(side)"
-			str05AudioTrackChannelLayoutChoice2="5.1(side)"
-
 
 			if [ "$str05DefaultAudioTrackAudioCommentaryPresence" -ge 1 ]
 			then
 				case $str05DefaultAudioTrackCommentaryChannelLayout in
 			
-					${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
+					"4.0"|"5.0(side)"|"5.1(side)"|"6.1"|"7.1") 
 						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=surround )
 						;;
 
-					stereo)
+					"3.0"|stereo)
 						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=stereo )
 						;;
 
@@ -1924,11 +1898,11 @@ other-transcode_commands() {
 			then
 				case $str05DefaultAudioTrackADChannelLayout in
 		
-					${str05AudioTrackChannelLayoutChoice1}|${str05AudioTrackChannelLayoutChoice2}) 
+					"4.0"|"5.0(side)"|"5.1(side)"|"6.1"|"7.1") 
 						arrHwTranscodeRbCommand+=(--add-audio \"AD\"=surround )
 						;;
 				
-					stereo)
+					"3.0"|stereo)
 						arrHwTranscodeRbCommand+=(--add-audio \"AD\"=stereo )
 						;;
 				
@@ -2041,6 +2015,31 @@ other-transcode_commands() {
 			echo "  - ${str05RawName}"
 		fi
 
+	
+		# Bitrate Overrides
+		# ---------------------------------------------------
+		# 
+		# For all EAC-3:     Surround=640, Stereo=224 and Mono=128  (other-transcode defaults)
+		# For EAC-3 + AAC:   Surround=640 EAC-3, Stereo=256 AAC and Mono=128 AAC  (other-transcode defaults)
+		#
+		# My settings will increase the EAC-3 stereo bitrate from 224->256 and mono from 128->160
+		# No bitrate settings applied if all audio is being copied
+		
+		if [ "$str05CopyAllOtherAudio" != "true" ]
+		then
+			if [[ "$str05EAC3SurroundAACStereoMono" != "true" ]]
+			then
+				case $str05DefaultAudioTrackChannelLayout in
+					mono)
+							arrHwTranscodeRbCommand+=(--mono-bitrate 160)
+							;;			
+					*)					
+							arrHwTranscodeRbCommand+=(--stereo-bitrate 256)
+							;;
+				esac
+			fi	
+		fi	
+
 
 		echo "${arrHwTranscodeRbCommand[@]}" > $dirOutboxCommands/${str05RawName}.other-transcode.command.txt
 
@@ -2056,10 +2055,10 @@ other-transcode_commands() {
 		unset str05DisableForcedSubtitleAutoBurnIn
 		
   		  		
-#  		if [ -f ${dirProcessing}/$str05FileName ]
-#		then
-#			mv ${dirProcessing}/$str05FileName ${dirReadyForTranscoding}/${str05File}
-#		fi
+  		if [ -f ${dirProcessing}/$str05FileName ]
+		then
+			mv ${dirProcessing}/$str05FileName ${dirReadyForTranscoding}/${str05File}
+		fi
   		  				
 	    read line </dev/null
 	done
