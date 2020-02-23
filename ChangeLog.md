@@ -2,6 +2,7 @@
 
 ## 0.27 ##
 - Interactive `ffprobe` information now contains `.profile` which gives more detail on various codecs including DTS
+- Options for `--pass-dts` and `--keep-ac3-stereo` added (simplified mode only, added to the end of the commandline)
 
 ## 0.26 ##
 
