@@ -1,7 +1,7 @@
 # Change Log #
 
 ## 0.27 ##
-
+- Interactive `ffprobe` information now contains `.profile` which gives more detail on various codecs including DTS
 
 ## 0.26 ##
 
