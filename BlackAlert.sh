@@ -563,7 +563,9 @@ Please select one of the following:
 	7. AUDIO Options
 		- Copy the main audio track (no audio transcoding)
 		- Copy all audio tracks (no audio transcoding)
-		- EAC-3 surround & AAC stereo/mono 		
+		- EAC-3 surround & AAC stereo/mono
+		- Enable DTS pass-through
+		- Keep AC-3 stereo 		
 	8. MORE Options
 		- Create single/unified mkvpropedit script
 		- Use --x264-avbr software encoding
@@ -656,16 +658,18 @@ Please select one of the following:
 	1. Copy the main audio track (no transcoding)
 	2. Copy all audio tracks (no transcoding)
 	3. EAC-3 surround & AAC stereo/mono
-	4. Back
+	4. Enable DTS pass-through
+	5. Keep AC-3 stereo 
+	6. Back
 	0. Quit
 
 =================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-4] > "
+	  read -p "Enter selection [0-6] > "
 
-  		if [[ $REPLY =~ ^[0-4]$ ]]; then
+  		if [[ $REPLY =~ ^[0-6]$ ]]; then
     	case $REPLY in
      	1)
            	step4_ffprobe_tsv
@@ -683,6 +687,16 @@ _EOF_
           	continue
           	;;
         4)
+      		step4_ffprobe_tsv
+      	  	step4_EnableDTSPassthrough
+      	  	continue
+          	;;  
+        5)
+      		step4_ffprobe_tsv
+      	  	step4_KeepAC3Stereo
+          	continue
+          	;;          
+        6)
         	break
         	;;	
         0)
@@ -1404,6 +1418,33 @@ step4_EAC3plusAAC() {
 }
 
 
+step4_EnableDTSPassthrough() {
+
+	# Adds the --pass-dts to the end
+	
+	echo "EnableDTSPassthrough,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo "DTS Passthrough will be enabled"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""	
+
+}
+
+
+step4_KeepAC3Stereo() {
+
+	# Adds --keep-ac3-stereo at the end
+	
+	echo "KeepAC3Stereo,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo "AC-3 Stereo tracks will be kept"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""	
+
+}
+
 
 step4_DisableForcedSubtitleAutoBurnIn() {
 
@@ -1416,8 +1457,6 @@ step4_DisableForcedSubtitleAutoBurnIn() {
 	echo ""	
 
 }
-
-
 
 
 
@@ -1625,7 +1664,9 @@ other-transcode_commands() {
   		str05SubtitleSDHPresence=""
   		str05SubtitleCommentaryPresence=""
   		str05OverrideFile=""
-  		str04EAC3SurroundAACStereoMono=""
+  		str05EAC3SurroundAACStereoMono=""
+  		str05EnableDTSPassthrough=""
+  		str05KeepAC3Stereo=""
 
   		
   		# In order to determine the channel width of AD and Commentary audio streams, there's an assumption that there'll only ever be one (1) AD track named "AD"
@@ -1684,6 +1725,8 @@ other-transcode_commands() {
 			str05CopyAllOtherAudio=$( grep CopyAllOtherAudio $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05EAC3SurroundAACStereoMono=$( grep EAC3SurroundAACStereoMono $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05DisableForcedSubtitleAutoBurnIn=$( grep DisableForcedSubtitleAutoBurnIn $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05EnableDTSPassthrough=$( grep EnableDTSPassthrough $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05KeepAC3Stereo=$( grep KeepAC3Stereo $str05OverrideFile | cut -d"," -f2 2>&1)
 		fi	
 
 
@@ -2041,6 +2084,24 @@ other-transcode_commands() {
 		fi	
 
 
+		# DTS Passthrough enabled
+		# ---------------------------------------------------
+
+		if [ "$str05EnableDTSPassthrough" = "true" ]
+		then
+			arrHwTranscodeRbCommand+=(--pass-dts)
+		fi	
+		
+		
+		# AS-3 Stereo retention
+		# ---------------------------------------------------
+		
+		if [ "$str05KeepAC3Stereo" = "true" ]
+		then
+			arrHwTranscodeRbCommand+=(--keep-ac3-stereo)
+		fi	
+
+
 		echo "${arrHwTranscodeRbCommand[@]}" > $dirOutboxCommands/${str05RawName}.other-transcode.command.txt
 
 		# Unset Variables for next iteration
@@ -2053,6 +2114,8 @@ other-transcode_commands() {
 		unset strCurrentAudioDefaultIndexNumber
 		unset str05EAC3SurroundAACStereoMono
 		unset str05DisableForcedSubtitleAutoBurnIn
+		unset str05EnableDTSPassthrough
+  		unset str05KeepAC3Stereo
 		
   		  		
   		if [ -f ${dirProcessing}/$str05FileName ]
