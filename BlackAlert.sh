@@ -22,7 +22,7 @@ DELAY=3
 
 echo "############################################################################################"
 echo "#                                                                                          #"
-echo "# BLACKALERT.SH (v0.26)                                                                    #"
+echo "# BLACKALERT.SH (v0.27)                                                                    #"
 echo "#                                                                                          #"
 echo "############################################################################################"
 
@@ -765,14 +765,14 @@ step4_ffprobe_summary() {
 
 	# This is the main summary sheet which is displayed at the beginning and then revised after each edit.
 	echo ""
-	echo "#######################################################################################################################################"
+	echo "######################################################################################################################################################"
 	echo ""
 	echo "$FILE"
 	echo ""
-	echo "#######################################################################################################################################"
+	echo "######################################################################################################################################################"
 	echo ""
 	step4_ffprobe_command $FILE | step4_jq_selectall_command
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 
 }
 
@@ -781,7 +781,7 @@ step4_ffprobe_summary() {
 step4_ffprobe_command() {
 
 	#ffprobe -v error -show_entries stream=index,format,codec_name,channel_layout,channels,codec_type:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
-	ffprobe -v error -show_entries stream=index,format,codec_name,channel_layout,channels,codec_type,field_order:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
+	ffprobe -v error -show_entries stream=index,format,codec_name,profile,channel_layout,channels,codec_type,field_order:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
 
 }
 
@@ -789,14 +789,14 @@ step4_ffprobe_command() {
 step4_jq_selectall_command() {
 
 #	jq -r '["TYPE","INDEX","LANGUAGE","CODEC","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @csv ' | sed 's/\"//g' | sed 's/,/ ,/g' | column -t -s ','
-	jq -r '["TYPE","INDEX","LANGUAGE","CODEC","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @tsv ' | sed 's/\"//g' | sed -E 's/'$(printf '\t')'/'$(printf ' \t')'/g' | column -t -s $'\t'
+	jq -r '["TYPE","INDEX","LANGUAGE","CODEC","PROFILE","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .profile, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @tsv ' | sed 's/\"//g' | sed -E 's/'$(printf '\t')'/'$(printf ' \t')'/g' | column -t -s $'\t'
 }
 
 step4_jq_selectstream_command() {
 
 	# expects an argument of "video", "audio" or "subtitle"
 #	jq -r --arg STREAM "$1" '["TYPE","INDEX","LANGUAGE","CODEC","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type==$STREAM) | [.codec_type, .index, .tags.language, .codec_name, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @csv ' | sed 's/\"//g' | sed 's/,/ ,/g' | column -t -s ','
-	jq -r --arg STREAM "$1" '["TYPE","INDEX","LANGUAGE","CODEC","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type==$STREAM) | [.codec_type, .index, .tags.language, .codec_name, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @tsv ' | sed 's/\"//g' | sed -E 's/'$(printf '\t')'/'$(printf ' \t')'/g' | column -t -s $'\t'
+	jq -r --arg STREAM "$1" '["TYPE","INDEX","LANGUAGE","CODEC","PROFILE","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type==$STREAM) | [.codec_type, .index, .tags.language, .codec_name, .profile, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @tsv ' | sed 's/\"//g' | sed -E 's/'$(printf '\t')'/'$(printf ' \t')'/g' | column -t -s $'\t'
 }
 
 
@@ -826,7 +826,7 @@ step4_ffprobe_tsv() {
 	fi	
 
 #	step4_ffprobe_command $FILE | jq -r '.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ] | @csv ' | sed 's/\"//g' > $strFfprobeTsvFile
-	step4_ffprobe_command $FILE | jq -r '.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ] | @tsv ' | sed 's/\"//g' > $strFfprobeTsvFile
+	step4_ffprobe_command $FILE | jq -r '.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .profile, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ] | @tsv ' | sed 's/\"//g' > $strFfprobeTsvFile
 
 	# =================================================================================
 	# These variables work out the totals
@@ -867,11 +867,11 @@ step4_rename_track() {
 
 	# Get presented with the audio-only options
 	echo ""
-	echo "#######################################################################################################################################"
+	echo "######################################################################################################################################################"
 	echo ""
 	echo "$FILE"
 	echo ""
-	echo "#######################################################################################################################################"
+	echo "######################################################################################################################################################"
 	echo ""
 
 	while true; do
@@ -894,7 +894,7 @@ step4_rename_track() {
 		esac
 	done
 
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo ""
 
 	case $strRenameTrackArg1 in
@@ -972,9 +972,9 @@ step4_set_default_audio_track() {
 		then
 			strCurrentAudioDefaultIndexNumber=$( grep ^audio $strFfprobeTsvFile | cut -f2,8 | grep "\t1" | cut -f1 )	
 			echo ""
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			step4_ffprobe_command $FILE | step4_jq_selectstream_command audio
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			echo ""	
 			echo "**************************************************************************"
 			echo "Audio track *** $strCurrentAudioDefaultIndexNumber *** is the current default track"
@@ -1020,9 +1020,9 @@ step4_set_default_audio_track() {
 	elif [ $strCheckCurrentAudioDefaultIndex -eq 0 ] 
 		then
 			echo ""
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			step4_ffprobe_command $FILE | step4_jq_selectstream_command audio
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			echo ""			
 			echo "**************************************************************************"
 			echo "WARNING:  NO audio tracks have been set to a default track."
@@ -1050,9 +1050,9 @@ step4_set_default_audio_track() {
 	elif [ $strCheckCurrentAudioDefaultIndex -gt 1 ]
 		then
 			echo ""
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			step4_ffprobe_command $FILE | step4_jq_selectstream_command audio
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			echo ""			
 			echo "**************************************************************************"
 			echo "WARNING:  Multiple audio tracks have been set to default track."
@@ -1114,9 +1114,9 @@ step4_set_forced_subtitle_track() {
 		then
 			strCurrentForcedSubtitleIndexNumber=$( grep ^subtitle $strFfprobeTsvFile | cut -f2,9 | grep "\t1" | cut -f1 )	
 			echo ""
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			step4_ffprobe_command $FILE | step4_jq_selectstream_command subtitle
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			echo ""	
 			echo "**************************************************************************"
 			echo "Subtitle stream *** $strCurrentForcedSubtitleIndexNumber *** is currently set to forced"
@@ -1161,9 +1161,9 @@ step4_set_forced_subtitle_track() {
 	elif [ $strCheckCurrentForcedSubIndex -eq 0 ] 
 		then
 			echo ""
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			step4_ffprobe_command $FILE | step4_jq_selectstream_command subtitle
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			echo ""			
 			echo "**************************************************************************"
 			echo "WARNING:  NO forced subtitles have been set."
@@ -1207,9 +1207,9 @@ step4_set_forced_subtitle_track() {
 	elif [ $strCheckCurrentForcedSubIndex -gt 1 ]
 		then
 			echo ""
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			step4_ffprobe_command $FILE | step4_jq_selectstream_command subtitle
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			echo ""			
 			echo "**************************************************************************"
 			echo "WARNING:  Multiple forced subtitles have been set."
@@ -1353,9 +1353,9 @@ step4_copy_all_audio_tracks() {
 	strCurrentAudioDefaultIndexNumber=$( grep ^audio $strFfprobeTsvFile | cut -f2,8 | grep "\t1" | cut -f1 )	
 	
 	echo ""
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	step4_ffprobe_command $FILE | step4_jq_selectstream_command audio
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo ""	
 	
 	
@@ -1396,9 +1396,9 @@ step4_EAC3plusAAC() {
 	
 	echo "EAC3SurroundAACStereoMono,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
 	echo ""
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo "EAC-3/Dolby Digital+ will be used for surround only. Stereo/Mono tracks will be AAC."
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo ""	
 
 }
@@ -1410,9 +1410,9 @@ step4_DisableForcedSubtitleAutoBurnIn() {
 	
 	echo "DisableForcedSubtitleAutoBurnIn,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
 	echo ""
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo "Forced subtitle auto burn-in will be disabled"
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo ""	
 
 }
@@ -1545,7 +1545,7 @@ step4_tsv_cleanup() {
 step4_usex264-avbr() {
 
 	echo ""
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo ""
 	echo "***********************************************"
 	echo "***********************************************"
@@ -1560,7 +1560,7 @@ step4_usex264-avbr() {
 	
 	echo "X264AVBRActive,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
 	
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 
 }
 
