@@ -956,7 +956,7 @@ step4_rename_track() {
 	esac
 	
 	strStreamNumber=$number
-	strCurrentStreamTitle=$( grep "${strRenameTrackArg1}\t$strStreamNumber" $strFfprobeTsvFile | cut -f10 )
+	strCurrentStreamTitle=$( grep "${strRenameTrackArg1}\t$strStreamNumber" $strFfprobeTsvFile | cut -f11 )
 	read -p "Rename track $strStreamNumber from $strCurrentStreamTitle to:  "
 	strAudioStreamNewTitle=$REPLY
 	((strStreamNumber++))
@@ -980,11 +980,11 @@ step4_set_default_audio_track() {
 	strAudioTrackListing=""
 
 	# Identify the current default audio track and index number
-	local strCheckCurrentAudioDefaultIndex=$( grep ^audio $strFfprobeTsvFile | cut -f8 | grep "1" | wc -l )
+	local strCheckCurrentAudioDefaultIndex=$( grep ^audio $strFfprobeTsvFile | cut -f9 | grep "1" | wc -l )
 
 	if [ $strCheckCurrentAudioDefaultIndex -eq 1 ] 
 		then
-			strCurrentAudioDefaultIndexNumber=$( grep ^audio $strFfprobeTsvFile | cut -f2,8 | grep "\t1" | cut -f1 )	
+			strCurrentAudioDefaultIndexNumber=$( grep ^audio $strFfprobeTsvFile | cut -f2,9 | grep "\t1" | cut -f1 )	
 			echo ""
 			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			step4_ffprobe_command $FILE | step4_jq_selectstream_command audio
@@ -1122,11 +1122,11 @@ step4_set_forced_subtitle_track() {
 		
 
 	# Identify the current forced subtitle and index number
-	strCheckCurrentForcedSubIndex=$( grep ^subtitle $strFfprobeTsvFile | cut -f9 | grep "1" | wc -l )
+	strCheckCurrentForcedSubIndex=$( grep ^subtitle $strFfprobeTsvFile | cut -f10 | grep "1" | wc -l )
 
 	if [ $strCheckCurrentForcedSubIndex -eq 1 ] 
 		then
-			strCurrentForcedSubtitleIndexNumber=$( grep ^subtitle $strFfprobeTsvFile | cut -f2,9 | grep "\t1" | cut -f1 )	
+			strCurrentForcedSubtitleIndexNumber=$( grep ^subtitle $strFfprobeTsvFile | cut -f2,10 | grep "\t1" | cut -f1 )	
 			echo ""
 			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			step4_ffprobe_command $FILE | step4_jq_selectstream_command subtitle
@@ -1363,8 +1363,8 @@ step4_copy_all_audio_tracks() {
 	CopyAllOtherAudio=""
 
 	# Identify the current default audio track and index number
-	local strCheckCurrentAudioDefaultIndex=$( grep ^audio $strFfprobeTsvFile | cut -f8 | grep "1" | wc -l )
-	strCurrentAudioDefaultIndexNumber=$( grep ^audio $strFfprobeTsvFile | cut -f2,8 | grep "\t1" | cut -f1 )	
+	local strCheckCurrentAudioDefaultIndex=$( grep ^audio $strFfprobeTsvFile | cut -f9 | grep "1" | wc -l )
+	strCurrentAudioDefaultIndexNumber=$( grep ^audio $strFfprobeTsvFile | cut -f2,9 | grep "\t1" | cut -f1 )	
 	
 	echo ""
 	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
@@ -1491,9 +1491,9 @@ step4_mkvpropedit_unfied_command() {
 	do
 		Col01_stream=$( echo $line | cut -f1 )
 		Col02_index=$( echo $line | cut -f2 )
-		Col08_default=$( echo $line | cut -f8 )
-		Col09_forced=$( echo $line | cut -f9 )
-		Col10_title=$( echo $line | cut -f10 )
+		Col08_default=$( echo $line | cut -f9 )
+		Col09_forced=$( echo $line | cut -f10 )
+		Col10_title=$( echo $line | cut -f11 )
 
 		case $Col01_stream in
 			video)
