@@ -569,7 +569,10 @@ Please select one of the following:
 	8. MORE Options
 		- Create single/unified mkvpropedit script
 		- Use --x264-avbr software encoding
-		- Disable forced subtitle burn-in	
+		- Disable forced subtitle burn-in
+		- Surround bitrate override
+		- Stereo bitrate override
+		- Mono bitrate override	
 	9. Next
 	0. Quit
 
@@ -729,16 +732,19 @@ Please select one of the following:
 	1. Create single/unified mkvpropedit script
 	2. Use --x264-avbr software encoding
 	3. Disable forced subtitle burn-in	
-	4. Back
+	4. Surround bitrate override
+	5. Stereo bitrate override
+	6. Mono bitrate override
+	7. Back
 	0. Quit
 
 =================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-4] > "
+	  read -p "Enter selection [0-7] > "
 
-  		if [[ $REPLY =~ ^[0-4]$ ]]; then
+  		if [[ $REPLY =~ ^[0-7]$ ]]; then
     	case $REPLY in
      	1)
            	step4_ffprobe_tsv
@@ -755,7 +761,22 @@ _EOF_
       	  	step4_DisableForcedSubtitleAutoBurnIn
           	continue
           	;;
-        4)
+      	4)
+      	  	step4_ffprobe_tsv
+      	  	step4_SurroundBitrateOverride
+          	continue
+          	;;
+      	5)
+      	  	step4_ffprobe_tsv
+      	  	step4_StereoBitrateOverride
+          	continue
+          	;;
+      	6)
+      	  	step4_ffprobe_tsv
+      	  	step4_MonoBitrateOverride
+          	continue
+          	;;          	          	          	
+        7)
         	break
         	;;	
         0)
@@ -1459,6 +1480,78 @@ step4_DisableForcedSubtitleAutoBurnIn() {
 }
 
 
+step4_SurroundBitrateOverride() {
+
+	while true
+    do
+    	read -p "Please enter the bitrate (kbit/s) override for SURROUND tracks [256-768] > "	strSurroundOverride
+    [[ $strSurroundOverride =~ ^[0-9]+$ ]] || { echo "Enter a valid bitrate"; continue; }
+  		if ((${strSurroundOverride} >= 256 && ${strSurroundOverride} <= 768))
+  		then
+    		break
+  		else
+    		echo "Please chose a valid bitrate, try again"
+  		fi
+	done
+	
+	echo "SurroundBitrateOverride,$strSurroundOverride" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo "The 640 kbit/s default for 5.1 surround has been changed to $strSurroundOverride."
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""	
+
+}
+
+
+step4_StereoBitrateOverride() {
+
+	while true
+    do
+    	read -p "Please enter the bitrate (kbit/s) override for STEREO tracks [128-320] > "	strStereoOverride
+    [[ $strStereoOverride =~ ^[0-9]+$ ]] || { echo "Enter a valid bitrate"; continue; }
+  		if ((${strStereoOverride} >= 128 && ${strStereoOverride} <= 320))
+  		then
+    		break
+  		else
+    		echo "Please chose a valid bitrate, try again"
+  		fi
+	done
+	
+	echo "StereoBitrateOverride,$strStereoOverride" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo "The 256 kbit/s default for stereo has been changed to $strStereoOverride."
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""	
+
+}
+
+
+step4_MonoBitrateOverride() {
+
+	while true
+    do
+    	read -p "Please enter the bitrate (kbit/s) override for MONO tracks [64-256] > "	strMonoOverride
+    [[ $strMonoOverride =~ ^[0-9]+$ ]] || { echo "Enter a valid bitrate"; continue; }
+  		if ((${strMonoOverride} >= 64 && ${strMonoOverride} <= 256))
+  		then
+    		break
+  		else
+    		echo "Please chose a valid bitrate, try again"
+  		fi
+	done
+	
+	echo "MonoBitrateOverride,$strMonoOverride" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo "The 128 kbit/s default for mono has been changed to $strMonoOverride."
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""	
+
+}
+
+
 
 step4_mkvpropedit_unfied_command() {
 
@@ -1667,6 +1760,10 @@ other-transcode_commands() {
   		str05EAC3SurroundAACStereoMono=""
   		str05EnableDTSPassthrough=""
   		str05KeepAC3Stereo=""
+  		str05SurroundBitrateOverride=""
+  		str05StereoBitrateOverride=""
+  		str05MonoBitrateOverride=""
+  		
 
   		
   		# In order to determine the channel width of AD and Commentary audio streams, there's an assumption that there'll only ever be one (1) AD track named "AD"
@@ -1727,6 +1824,9 @@ other-transcode_commands() {
 			str05DisableForcedSubtitleAutoBurnIn=$( grep DisableForcedSubtitleAutoBurnIn $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05EnableDTSPassthrough=$( grep EnableDTSPassthrough $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05KeepAC3Stereo=$( grep KeepAC3Stereo $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05SurroundBitrateOverride=$( grep SurroundBitrateOverride $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05StereoBitrateOverride=$( grep StereoBitrateOverride $str05OverrideFile | cut -d"," -f2 2>&1)
+  			str05MonoBitrateOverride=$( grep MonoBitrateOverride $str05OverrideFile | cut -d"," -f2 2>&1)
 		fi	
 
 
@@ -2058,31 +2158,6 @@ other-transcode_commands() {
 			echo "  - ${str05RawName}"
 		fi
 
-	
-		# Bitrate Overrides
-		# ---------------------------------------------------
-		# 
-		# For all EAC-3:     Surround=640, Stereo=224 and Mono=128  (other-transcode defaults)
-		# For EAC-3 + AAC:   Surround=640 EAC-3, Stereo=256 AAC and Mono=128 AAC  (other-transcode defaults)
-		#
-		# My settings will increase the EAC-3 stereo bitrate from 224->256 and mono from 128->160
-		# No bitrate settings applied if all audio is being copied
-		
-		if [ "$str05CopyAllOtherAudio" != "true" ]
-		then
-			if [[ "$str05EAC3SurroundAACStereoMono" != "true" ]]
-			then
-				case $str05DefaultAudioTrackChannelLayout in
-					mono)
-							arrHwTranscodeRbCommand+=(--mono-bitrate 160)
-							;;			
-					*)					
-							arrHwTranscodeRbCommand+=(--stereo-bitrate 256)
-							;;
-				esac
-			fi	
-		fi	
-
 
 		# DTS Passthrough enabled
 		# ---------------------------------------------------
@@ -2102,6 +2177,35 @@ other-transcode_commands() {
 		fi	
 
 
+		# Surround Bitrate Override
+		# ---------------------------------------------------
+
+		if [[ $str05SurroundBitrateOverride =~ ^[0-9]+$ ]]
+		then
+			arrHwTranscodeRbCommand+=(--surround-bitrate $str05SurroundBitrateOverride)
+		fi	
+
+
+		# Stereo Bitrate Override
+		# ---------------------------------------------------
+
+		if [[ $str05StereoBitrateOverride =~ ^[0-9]+$ ]]
+		then
+			arrHwTranscodeRbCommand+=(--stereo-bitrate $str05StereoBitrateOverride)
+		fi	
+
+		
+		# Mono Bitrate Override
+		# ---------------------------------------------------
+
+		if [[ $str05MonoBitrateOverride =~ ^[0-9]+$ ]]
+		then
+			arrHwTranscodeRbCommand+=(--mono-bitrate $str05MonoBitrateOverride)
+		fi	
+
+
+
+
 		echo "${arrHwTranscodeRbCommand[@]}" > $dirOutboxCommands/${str05RawName}.other-transcode.command.txt
 
 		# Unset Variables for next iteration
@@ -2116,6 +2220,9 @@ other-transcode_commands() {
 		unset str05DisableForcedSubtitleAutoBurnIn
 		unset str05EnableDTSPassthrough
   		unset str05KeepAC3Stereo
+  		unset str05SurroundBitrateOverride
+  		unset str05StereoBitrateOverride
+  		unset str05MonoBitrateOverride
 		
   		  		
   		if [ -f ${dirProcessing}/$str05FileName ]
