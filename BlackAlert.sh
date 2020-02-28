@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ###############################################################################
 # BlackAlert.sh                                                               #
-# Version 0.26                                                                #
+# Version 0.27                                                                #
 #                                                                             #
 # Copyright 2020 - Joe Hurley                                                 #
 #                                                                             #
@@ -22,7 +22,7 @@ DELAY=3
 
 echo "############################################################################################"
 echo "#                                                                                          #"
-echo "# BLACKALERT.SH (v0.26)                                                                    #"
+echo "# BLACKALERT.SH (v0.27)                                                                    #"
 echo "#                                                                                          #"
 echo "############################################################################################"
 
@@ -563,11 +563,16 @@ Please select one of the following:
 	7. AUDIO Options
 		- Copy the main audio track (no audio transcoding)
 		- Copy all audio tracks (no audio transcoding)
-		- EAC-3 surround & AAC stereo/mono 		
+		- EAC-3 surround & AAC stereo/mono
+		- Enable DTS pass-through
+		- Keep AC-3 stereo 		
 	8. MORE Options
 		- Create single/unified mkvpropedit script
 		- Use --x264-avbr software encoding
-		- Disable forced subtitle burn-in	
+		- Disable forced subtitle burn-in
+		- Surround bitrate override
+		- Stereo bitrate override
+		- Mono bitrate override	
 	9. Next
 	0. Quit
 
@@ -656,16 +661,18 @@ Please select one of the following:
 	1. Copy the main audio track (no transcoding)
 	2. Copy all audio tracks (no transcoding)
 	3. EAC-3 surround & AAC stereo/mono
-	4. Back
+	4. Enable DTS pass-through
+	5. Keep AC-3 stereo 
+	6. Back
 	0. Quit
 
 =================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-4] > "
+	  read -p "Enter selection [0-6] > "
 
-  		if [[ $REPLY =~ ^[0-4]$ ]]; then
+  		if [[ $REPLY =~ ^[0-6]$ ]]; then
     	case $REPLY in
      	1)
            	step4_ffprobe_tsv
@@ -683,6 +690,16 @@ _EOF_
           	continue
           	;;
         4)
+      		step4_ffprobe_tsv
+      	  	step4_EnableDTSPassthrough
+      	  	continue
+          	;;  
+        5)
+      		step4_ffprobe_tsv
+      	  	step4_KeepAC3Stereo
+          	continue
+          	;;          
+        6)
         	break
         	;;	
         0)
@@ -715,16 +732,19 @@ Please select one of the following:
 	1. Create single/unified mkvpropedit script
 	2. Use --x264-avbr software encoding
 	3. Disable forced subtitle burn-in	
-	4. Back
+	4. Surround bitrate override
+	5. Stereo bitrate override
+	6. Mono bitrate override
+	7. Back
 	0. Quit
 
 =================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-4] > "
+	  read -p "Enter selection [0-7] > "
 
-  		if [[ $REPLY =~ ^[0-4]$ ]]; then
+  		if [[ $REPLY =~ ^[0-7]$ ]]; then
     	case $REPLY in
      	1)
            	step4_ffprobe_tsv
@@ -741,7 +761,22 @@ _EOF_
       	  	step4_DisableForcedSubtitleAutoBurnIn
           	continue
           	;;
-        4)
+      	4)
+      	  	step4_ffprobe_tsv
+      	  	step4_SurroundBitrateOverride
+          	continue
+          	;;
+      	5)
+      	  	step4_ffprobe_tsv
+      	  	step4_StereoBitrateOverride
+          	continue
+          	;;
+      	6)
+      	  	step4_ffprobe_tsv
+      	  	step4_MonoBitrateOverride
+          	continue
+          	;;          	          	          	
+        7)
         	break
         	;;	
         0)
@@ -765,14 +800,14 @@ step4_ffprobe_summary() {
 
 	# This is the main summary sheet which is displayed at the beginning and then revised after each edit.
 	echo ""
-	echo "#######################################################################################################################################"
+	echo "######################################################################################################################################################"
 	echo ""
 	echo "$FILE"
 	echo ""
-	echo "#######################################################################################################################################"
+	echo "######################################################################################################################################################"
 	echo ""
 	step4_ffprobe_command $FILE | step4_jq_selectall_command
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 
 }
 
@@ -781,7 +816,7 @@ step4_ffprobe_summary() {
 step4_ffprobe_command() {
 
 	#ffprobe -v error -show_entries stream=index,format,codec_name,channel_layout,channels,codec_type:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
-	ffprobe -v error -show_entries stream=index,format,codec_name,channel_layout,channels,codec_type,field_order:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
+	ffprobe -v error -show_entries stream=index,format,codec_name,profile,channel_layout,channels,codec_type,field_order:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
 
 }
 
@@ -789,14 +824,14 @@ step4_ffprobe_command() {
 step4_jq_selectall_command() {
 
 #	jq -r '["TYPE","INDEX","LANGUAGE","CODEC","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @csv ' | sed 's/\"//g' | sed 's/,/ ,/g' | column -t -s ','
-	jq -r '["TYPE","INDEX","LANGUAGE","CODEC","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @tsv ' | sed 's/\"//g' | sed -E 's/'$(printf '\t')'/'$(printf ' \t')'/g' | column -t -s $'\t'
+	jq -r '["TYPE","INDEX","LANGUAGE","CODEC","PROFILE","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .profile, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @tsv ' | sed 's/\"//g' | sed -E 's/'$(printf '\t')'/'$(printf ' \t')'/g' | column -t -s $'\t'
 }
 
 step4_jq_selectstream_command() {
 
 	# expects an argument of "video", "audio" or "subtitle"
 #	jq -r --arg STREAM "$1" '["TYPE","INDEX","LANGUAGE","CODEC","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type==$STREAM) | [.codec_type, .index, .tags.language, .codec_name, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @csv ' | sed 's/\"//g' | sed 's/,/ ,/g' | column -t -s ','
-	jq -r --arg STREAM "$1" '["TYPE","INDEX","LANGUAGE","CODEC","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type==$STREAM) | [.codec_type, .index, .tags.language, .codec_name, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @tsv ' | sed 's/\"//g' | sed -E 's/'$(printf '\t')'/'$(printf ' \t')'/g' | column -t -s $'\t'
+	jq -r --arg STREAM "$1" '["TYPE","INDEX","LANGUAGE","CODEC","PROFILE","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type==$STREAM) | [.codec_type, .index, .tags.language, .codec_name, .profile, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @tsv ' | sed 's/\"//g' | sed -E 's/'$(printf '\t')'/'$(printf ' \t')'/g' | column -t -s $'\t'
 }
 
 
@@ -826,7 +861,7 @@ step4_ffprobe_tsv() {
 	fi	
 
 #	step4_ffprobe_command $FILE | jq -r '.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ] | @csv ' | sed 's/\"//g' > $strFfprobeTsvFile
-	step4_ffprobe_command $FILE | jq -r '.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ] | @tsv ' | sed 's/\"//g' > $strFfprobeTsvFile
+	step4_ffprobe_command $FILE | jq -r '.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .profile, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ] | @tsv ' | sed 's/\"//g' > $strFfprobeTsvFile
 
 	# =================================================================================
 	# These variables work out the totals
@@ -867,11 +902,11 @@ step4_rename_track() {
 
 	# Get presented with the audio-only options
 	echo ""
-	echo "#######################################################################################################################################"
+	echo "######################################################################################################################################################"
 	echo ""
 	echo "$FILE"
 	echo ""
-	echo "#######################################################################################################################################"
+	echo "######################################################################################################################################################"
 	echo ""
 
 	while true; do
@@ -894,7 +929,7 @@ step4_rename_track() {
 		esac
 	done
 
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo ""
 
 	case $strRenameTrackArg1 in
@@ -942,7 +977,7 @@ step4_rename_track() {
 	esac
 	
 	strStreamNumber=$number
-	strCurrentStreamTitle=$( grep "${strRenameTrackArg1}\t$strStreamNumber" $strFfprobeTsvFile | cut -f10 )
+	strCurrentStreamTitle=$( grep "${strRenameTrackArg1}\t$strStreamNumber" $strFfprobeTsvFile | cut -f11 )
 	read -p "Rename track $strStreamNumber from $strCurrentStreamTitle to:  "
 	strAudioStreamNewTitle=$REPLY
 	((strStreamNumber++))
@@ -966,15 +1001,15 @@ step4_set_default_audio_track() {
 	strAudioTrackListing=""
 
 	# Identify the current default audio track and index number
-	local strCheckCurrentAudioDefaultIndex=$( grep ^audio $strFfprobeTsvFile | cut -f8 | grep "1" | wc -l )
+	local strCheckCurrentAudioDefaultIndex=$( grep ^audio $strFfprobeTsvFile | cut -f9 | grep "1" | wc -l )
 
 	if [ $strCheckCurrentAudioDefaultIndex -eq 1 ] 
 		then
-			strCurrentAudioDefaultIndexNumber=$( grep ^audio $strFfprobeTsvFile | cut -f2,8 | grep "\t1" | cut -f1 )	
+			strCurrentAudioDefaultIndexNumber=$( grep ^audio $strFfprobeTsvFile | cut -f2,9 | grep "\t1" | cut -f1 )	
 			echo ""
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			step4_ffprobe_command $FILE | step4_jq_selectstream_command audio
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			echo ""	
 			echo "**************************************************************************"
 			echo "Audio track *** $strCurrentAudioDefaultIndexNumber *** is the current default track"
@@ -1020,9 +1055,9 @@ step4_set_default_audio_track() {
 	elif [ $strCheckCurrentAudioDefaultIndex -eq 0 ] 
 		then
 			echo ""
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			step4_ffprobe_command $FILE | step4_jq_selectstream_command audio
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			echo ""			
 			echo "**************************************************************************"
 			echo "WARNING:  NO audio tracks have been set to a default track."
@@ -1050,9 +1085,9 @@ step4_set_default_audio_track() {
 	elif [ $strCheckCurrentAudioDefaultIndex -gt 1 ]
 		then
 			echo ""
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			step4_ffprobe_command $FILE | step4_jq_selectstream_command audio
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			echo ""			
 			echo "**************************************************************************"
 			echo "WARNING:  Multiple audio tracks have been set to default track."
@@ -1108,15 +1143,15 @@ step4_set_forced_subtitle_track() {
 		
 
 	# Identify the current forced subtitle and index number
-	strCheckCurrentForcedSubIndex=$( grep ^subtitle $strFfprobeTsvFile | cut -f9 | grep "1" | wc -l )
+	strCheckCurrentForcedSubIndex=$( grep ^subtitle $strFfprobeTsvFile | cut -f10 | grep "1" | wc -l )
 
 	if [ $strCheckCurrentForcedSubIndex -eq 1 ] 
 		then
-			strCurrentForcedSubtitleIndexNumber=$( grep ^subtitle $strFfprobeTsvFile | cut -f2,9 | grep "\t1" | cut -f1 )	
+			strCurrentForcedSubtitleIndexNumber=$( grep ^subtitle $strFfprobeTsvFile | cut -f2,10 | grep "\t1" | cut -f1 )	
 			echo ""
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			step4_ffprobe_command $FILE | step4_jq_selectstream_command subtitle
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			echo ""	
 			echo "**************************************************************************"
 			echo "Subtitle stream *** $strCurrentForcedSubtitleIndexNumber *** is currently set to forced"
@@ -1161,9 +1196,9 @@ step4_set_forced_subtitle_track() {
 	elif [ $strCheckCurrentForcedSubIndex -eq 0 ] 
 		then
 			echo ""
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			step4_ffprobe_command $FILE | step4_jq_selectstream_command subtitle
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			echo ""			
 			echo "**************************************************************************"
 			echo "WARNING:  NO forced subtitles have been set."
@@ -1207,9 +1242,9 @@ step4_set_forced_subtitle_track() {
 	elif [ $strCheckCurrentForcedSubIndex -gt 1 ]
 		then
 			echo ""
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			step4_ffprobe_command $FILE | step4_jq_selectstream_command subtitle
-			echo "---------------------------------------------------------------------------------------------------------------------------------------"
+			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			echo ""			
 			echo "**************************************************************************"
 			echo "WARNING:  Multiple forced subtitles have been set."
@@ -1349,13 +1384,13 @@ step4_copy_all_audio_tracks() {
 	CopyAllOtherAudio=""
 
 	# Identify the current default audio track and index number
-	local strCheckCurrentAudioDefaultIndex=$( grep ^audio $strFfprobeTsvFile | cut -f8 | grep "1" | wc -l )
-	strCurrentAudioDefaultIndexNumber=$( grep ^audio $strFfprobeTsvFile | cut -f2,8 | grep "\t1" | cut -f1 )	
+	local strCheckCurrentAudioDefaultIndex=$( grep ^audio $strFfprobeTsvFile | cut -f9 | grep "1" | wc -l )
+	strCurrentAudioDefaultIndexNumber=$( grep ^audio $strFfprobeTsvFile | cut -f2,9 | grep "\t1" | cut -f1 )	
 	
 	echo ""
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	step4_ffprobe_command $FILE | step4_jq_selectstream_command audio
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo ""	
 	
 	
@@ -1396,13 +1431,40 @@ step4_EAC3plusAAC() {
 	
 	echo "EAC3SurroundAACStereoMono,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
 	echo ""
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo "EAC-3/Dolby Digital+ will be used for surround only. Stereo/Mono tracks will be AAC."
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo ""	
 
 }
 
+
+step4_EnableDTSPassthrough() {
+
+	# Adds the --pass-dts to the end
+	
+	echo "EnableDTSPassthrough,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo "DTS Passthrough will be enabled"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""	
+
+}
+
+
+step4_KeepAC3Stereo() {
+
+	# Adds --keep-ac3-stereo at the end
+	
+	echo "KeepAC3Stereo,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo "AC-3 Stereo tracks will be kept"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""	
+
+}
 
 
 step4_DisableForcedSubtitleAutoBurnIn() {
@@ -1410,14 +1472,84 @@ step4_DisableForcedSubtitleAutoBurnIn() {
 	
 	echo "DisableForcedSubtitleAutoBurnIn,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
 	echo ""
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo "Forced subtitle auto burn-in will be disabled"
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo ""	
 
 }
 
 
+step4_SurroundBitrateOverride() {
+
+	while true
+    do
+    	read -p "Please enter the bitrate (kbit/s) override for SURROUND tracks [256-768] > "	strSurroundOverride
+    [[ $strSurroundOverride =~ ^[0-9]+$ ]] || { echo "Enter a valid bitrate"; continue; }
+  		if ((${strSurroundOverride} >= 256 && ${strSurroundOverride} <= 768))
+  		then
+    		break
+  		else
+    		echo "Please chose a valid bitrate, try again"
+  		fi
+	done
+	
+	echo "SurroundBitrateOverride,$strSurroundOverride" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo "The 640 kbit/s default for 5.1 surround has been changed to $strSurroundOverride."
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""	
+
+}
+
+
+step4_StereoBitrateOverride() {
+
+	while true
+    do
+    	read -p "Please enter the bitrate (kbit/s) override for STEREO tracks [128-320] > "	strStereoOverride
+    [[ $strStereoOverride =~ ^[0-9]+$ ]] || { echo "Enter a valid bitrate"; continue; }
+  		if ((${strStereoOverride} >= 128 && ${strStereoOverride} <= 320))
+  		then
+    		break
+  		else
+    		echo "Please chose a valid bitrate, try again"
+  		fi
+	done
+	
+	echo "StereoBitrateOverride,$strStereoOverride" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo "The 256 kbit/s default for stereo has been changed to $strStereoOverride."
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""	
+
+}
+
+
+step4_MonoBitrateOverride() {
+
+	while true
+    do
+    	read -p "Please enter the bitrate (kbit/s) override for MONO tracks [64-256] > "	strMonoOverride
+    [[ $strMonoOverride =~ ^[0-9]+$ ]] || { echo "Enter a valid bitrate"; continue; }
+  		if ((${strMonoOverride} >= 64 && ${strMonoOverride} <= 256))
+  		then
+    		break
+  		else
+    		echo "Please chose a valid bitrate, try again"
+  		fi
+	done
+	
+	echo "MonoBitrateOverride,$strMonoOverride" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo "The 128 kbit/s default for mono has been changed to $strMonoOverride."
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""	
+
+}
 
 
 
@@ -1452,9 +1584,9 @@ step4_mkvpropedit_unfied_command() {
 	do
 		Col01_stream=$( echo $line | cut -f1 )
 		Col02_index=$( echo $line | cut -f2 )
-		Col08_default=$( echo $line | cut -f8 )
-		Col09_forced=$( echo $line | cut -f9 )
-		Col10_title=$( echo $line | cut -f10 )
+		Col08_default=$( echo $line | cut -f9 )
+		Col09_forced=$( echo $line | cut -f10 )
+		Col10_title=$( echo $line | cut -f11 )
 
 		case $Col01_stream in
 			video)
@@ -1545,7 +1677,7 @@ step4_tsv_cleanup() {
 step4_usex264-avbr() {
 
 	echo ""
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo ""
 	echo "***********************************************"
 	echo "***********************************************"
@@ -1560,7 +1692,7 @@ step4_usex264-avbr() {
 	
 	echo "X264AVBRActive,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
 	
-	echo "---------------------------------------------------------------------------------------------------------------------------------------"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 
 }
 
@@ -1625,7 +1757,13 @@ other-transcode_commands() {
   		str05SubtitleSDHPresence=""
   		str05SubtitleCommentaryPresence=""
   		str05OverrideFile=""
-  		str04EAC3SurroundAACStereoMono=""
+  		str05EAC3SurroundAACStereoMono=""
+  		str05EnableDTSPassthrough=""
+  		str05KeepAC3Stereo=""
+  		str05SurroundBitrateOverride=""
+  		str05StereoBitrateOverride=""
+  		str05MonoBitrateOverride=""
+  		
 
   		
   		# In order to determine the channel width of AD and Commentary audio streams, there's an assumption that there'll only ever be one (1) AD track named "AD"
@@ -1684,6 +1822,11 @@ other-transcode_commands() {
 			str05CopyAllOtherAudio=$( grep CopyAllOtherAudio $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05EAC3SurroundAACStereoMono=$( grep EAC3SurroundAACStereoMono $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05DisableForcedSubtitleAutoBurnIn=$( grep DisableForcedSubtitleAutoBurnIn $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05EnableDTSPassthrough=$( grep EnableDTSPassthrough $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05KeepAC3Stereo=$( grep KeepAC3Stereo $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05SurroundBitrateOverride=$( grep SurroundBitrateOverride $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05StereoBitrateOverride=$( grep StereoBitrateOverride $str05OverrideFile | cut -d"," -f2 2>&1)
+  			str05MonoBitrateOverride=$( grep MonoBitrateOverride $str05OverrideFile | cut -d"," -f2 2>&1)
 		fi	
 
 
@@ -2015,30 +2158,52 @@ other-transcode_commands() {
 			echo "  - ${str05RawName}"
 		fi
 
-	
-		# Bitrate Overrides
+
+		# DTS Passthrough enabled
 		# ---------------------------------------------------
-		# 
-		# For all EAC-3:     Surround=640, Stereo=224 and Mono=128  (other-transcode defaults)
-		# For EAC-3 + AAC:   Surround=640 EAC-3, Stereo=256 AAC and Mono=128 AAC  (other-transcode defaults)
-		#
-		# My settings will increase the EAC-3 stereo bitrate from 224->256 and mono from 128->160
-		# No bitrate settings applied if all audio is being copied
-		
-		if [ "$str05CopyAllOtherAudio" != "true" ]
+
+		if [ "$str05EnableDTSPassthrough" = "true" ]
 		then
-			if [[ "$str05EAC3SurroundAACStereoMono" != "true" ]]
-			then
-				case $str05DefaultAudioTrackChannelLayout in
-					mono)
-							arrHwTranscodeRbCommand+=(--mono-bitrate 160)
-							;;			
-					*)					
-							arrHwTranscodeRbCommand+=(--stereo-bitrate 256)
-							;;
-				esac
-			fi	
+			arrHwTranscodeRbCommand+=(--pass-dts)
 		fi	
+		
+		
+		# AS-3 Stereo retention
+		# ---------------------------------------------------
+		
+		if [ "$str05KeepAC3Stereo" = "true" ]
+		then
+			arrHwTranscodeRbCommand+=(--keep-ac3-stereo)
+		fi	
+
+
+		# Surround Bitrate Override
+		# ---------------------------------------------------
+
+		if [[ $str05SurroundBitrateOverride =~ ^[0-9]+$ ]]
+		then
+			arrHwTranscodeRbCommand+=(--surround-bitrate $str05SurroundBitrateOverride)
+		fi	
+
+
+		# Stereo Bitrate Override
+		# ---------------------------------------------------
+
+		if [[ $str05StereoBitrateOverride =~ ^[0-9]+$ ]]
+		then
+			arrHwTranscodeRbCommand+=(--stereo-bitrate $str05StereoBitrateOverride)
+		fi	
+
+		
+		# Mono Bitrate Override
+		# ---------------------------------------------------
+
+		if [[ $str05MonoBitrateOverride =~ ^[0-9]+$ ]]
+		then
+			arrHwTranscodeRbCommand+=(--mono-bitrate $str05MonoBitrateOverride)
+		fi	
+
+
 
 
 		echo "${arrHwTranscodeRbCommand[@]}" > $dirOutboxCommands/${str05RawName}.other-transcode.command.txt
@@ -2053,6 +2218,11 @@ other-transcode_commands() {
 		unset strCurrentAudioDefaultIndexNumber
 		unset str05EAC3SurroundAACStereoMono
 		unset str05DisableForcedSubtitleAutoBurnIn
+		unset str05EnableDTSPassthrough
+  		unset str05KeepAC3Stereo
+  		unset str05SurroundBitrateOverride
+  		unset str05StereoBitrateOverride
+  		unset str05MonoBitrateOverride
 		
   		  		
   		if [ -f ${dirProcessing}/$str05FileName ]
