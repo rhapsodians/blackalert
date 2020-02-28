@@ -1,5 +1,10 @@
 # Change Log #
 
+## 0.28 ##
+_28 February 2020_
+- TBC
+
+
 ## 0.27 ##
 _28 February 2020_
 - Interactive `ffprobe` information now contains `.profile` which gives more detail on various codecs including DTS
