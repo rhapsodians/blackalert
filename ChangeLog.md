@@ -1,7 +1,7 @@
 # Change Log #
 
 ## 0.27 ##
-_25 February 2020 (current dev)_
+_28 February 2020_
 - Interactive `ffprobe` information now contains `.profile` which gives more detail on various codecs including DTS
 - Options for `--pass-dts` and `--keep-ac3-stereo` added (simplified mode only, added to the end of the commandline)
 - Added dates to the ChangeLog.md file.
