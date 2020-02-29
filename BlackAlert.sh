@@ -569,6 +569,8 @@ Please select one of the following:
 	8. MORE Options
 		- Create single/unified mkvpropedit script
 		- Use --x264-avbr software encoding
+		- QSV h/w transcoding (Windows)
+		- VideoToolbox h/w transcoding (Mac)
 		- Disable forced subtitle burn-in
 		- Surround bitrate override
 		- Stereo bitrate override
@@ -731,20 +733,22 @@ Please select one of the following:
 
 	1. Create single/unified mkvpropedit script
 	2. Use --x264-avbr software encoding
-	3. Disable forced subtitle burn-in	
-	4. Surround bitrate override
-	5. Stereo bitrate override
-	6. Mono bitrate override
-	7. Back
+	3. QSV h/w transcoding (Windows)
+	4. VideoToolbox h/w transcoding (Mac)
+	5. Disable forced subtitle burn-in	
+	6. Surround bitrate override
+	7. Stereo bitrate override
+	8. Mono bitrate override
+	9. Back
 	0. Quit
 
 =================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-7] > "
+	  read -p "Enter selection [0-9] > "
 
-  		if [[ $REPLY =~ ^[0-7]$ ]]; then
+  		if [[ $REPLY =~ ^[0-9]$ ]]; then
     	case $REPLY in
      	1)
            	step4_ffprobe_tsv
@@ -756,27 +760,37 @@ _EOF_
       	  	step4_usex264-avbr
           	continue
           	;;
-      	3)
+        3)
+      	  	step4_ffprobe_tsv
+      	  	step4_QSV
+          	continue
+          	;;
+    	4)
+      	  	step4_ffprobe_tsv
+      	  	step4_VideoToolboxMac
+          	continue
+          	;;  	   	
+      	5)
       	  	step4_ffprobe_tsv
       	  	step4_DisableForcedSubtitleAutoBurnIn
           	continue
           	;;
-      	4)
+      	6)
       	  	step4_ffprobe_tsv
       	  	step4_SurroundBitrateOverride
           	continue
           	;;
-      	5)
+      	7)
       	  	step4_ffprobe_tsv
       	  	step4_StereoBitrateOverride
           	continue
           	;;
-      	6)
+      	8)
       	  	step4_ffprobe_tsv
       	  	step4_MonoBitrateOverride
           	continue
           	;;          	          	          	
-        7)
+        9)
         	break
         	;;	
         0)
@@ -1553,6 +1567,57 @@ step4_MonoBitrateOverride() {
 
 
 
+step4_QSV() {
+
+	# Replaces Nvidia h/w transcoding defaults with Intel QSV option
+	
+	echo "UseQSV,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""
+	echo "********************************************************"
+	echo "********************************************************"
+	echo "*                                                      *"
+	echo "*           QSV hardware transcoding ACTIVE            *"
+	echo "*                                                      *"
+	echo "********************************************************"
+	echo "********************************************************"
+	echo "" 
+	echo "Setting $FILE to be transcoded using the software x264-avbr option."
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""
+}
+
+
+
+step4_VideoToolboxMac() {
+
+	# Replaces Nvidia h/w transcoding defaults with Apple's VideoToolBox option
+	
+	echo "UseVideoToolBox,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo "UseQSV,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""
+	echo "********************************************************"
+	echo "********************************************************"
+	echo "*                                                      *"
+	echo "*    Apple VideoToolbox hardware transcoding ACTIVE    *"
+	echo "*                   (8-bit only)                       *"
+	echo "*                                                      *"
+	echo "********************************************************"
+	echo "********************************************************"
+	echo "" 
+	echo "Setting $FILE to be transcoded using the software x264-avbr option."
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""
+}
+
+
+
+
 step4_mkvpropedit_unfied_command() {
 
 	# Define the variables for this function
@@ -1763,6 +1828,8 @@ other-transcode_commands() {
   		str05SurroundBitrateOverride=""
   		str05StereoBitrateOverride=""
   		str05MonoBitrateOverride=""
+  		str05UseQSV=""
+  		str05UseVideoToolBox=""
   		
 
   		
@@ -1827,6 +1894,8 @@ other-transcode_commands() {
 			str05SurroundBitrateOverride=$( grep SurroundBitrateOverride $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05StereoBitrateOverride=$( grep StereoBitrateOverride $str05OverrideFile | cut -d"," -f2 2>&1)
   			str05MonoBitrateOverride=$( grep MonoBitrateOverride $str05OverrideFile | cut -d"," -f2 2>&1)
+  			str05UseQSV=$( grep UseQSV $str05OverrideFile | cut -d"," -f2 2>&1)
+  			str05UseVideoToolBox=$( grep UseVideoToolBox $str05OverrideFile | cut -d"," -f2 2>&1)
 		fi	
 
 
@@ -1843,7 +1912,12 @@ other-transcode_commands() {
   		elif [[ "$str05SetCopyVideo" = "true" ]]
   		 	then
   		 	arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --copy-video )
-
+		elif [[ "$str05UseQSV" = "true" ]]
+			then
+			arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
+		elif [[ "$str05UseVideoToolBox" = "true" ]]
+			then
+			arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --vt --hevc ) 
   		else
 			# arrHwTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
 			arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
@@ -2223,6 +2297,8 @@ other-transcode_commands() {
   		unset str05SurroundBitrateOverride
   		unset str05StereoBitrateOverride
   		unset str05MonoBitrateOverride
+  		unset str05UseQSV
+  		unset str05UseVideoToolBox
 		
   		  		
   		if [ -f ${dirProcessing}/$str05FileName ]
