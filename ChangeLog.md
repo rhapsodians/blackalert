@@ -2,7 +2,7 @@
 
 ## 0.28 ##
 _28 February 2020_
-- TBC
+- Added menu options for Intel QSV and Apple VideoToolbox overrides
 
 
 ## 0.27 ##
