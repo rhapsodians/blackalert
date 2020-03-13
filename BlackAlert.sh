@@ -1582,8 +1582,6 @@ step4_QSV() {
 	echo "*                                                      *"
 	echo "********************************************************"
 	echo "********************************************************"
-	echo "" 
-	echo "Setting $FILE to be transcoded using the software x264-avbr option."
 	echo ""
 	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo ""
@@ -1596,7 +1594,6 @@ step4_VideoToolboxMac() {
 	# Replaces Nvidia h/w transcoding defaults with Apple's VideoToolBox option
 	
 	echo "UseVideoToolBox,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
-	echo "UseQSV,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
 	echo ""
 	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo ""
@@ -1608,8 +1605,6 @@ step4_VideoToolboxMac() {
 	echo "*                                                      *"
 	echo "********************************************************"
 	echo "********************************************************"
-	echo "" 
-	echo "Setting $FILE to be transcoded using the software x264-avbr option."
 	echo ""
 	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo ""
@@ -1900,6 +1895,24 @@ other-transcode_commands() {
 
 
   		declare -a arrHwTranscodeCommand=()
+  		
+  		
+  		if [[ "$str05UseQSV" = "true" ]] || [[ "$str05UseVideoToolBox" = "true" ]] || [[ "$str05SetCopyVideo" = "true" ]]
+  		then
+ 			echo "*********************************************************************************"
+			echo "WARNING:    "
+			echo ""
+			echo "$FILE"
+			echo "" 			
+  			echo "Combinations of QSV, VideoToolbox or --copy-all video have been set"
+  			echo "Only one of the above is allowed for transcoding."
+  			echo "please re-run and delete the previously generated commands"
+  			echo ""
+			echo "Exiting now ..."
+			echo ""
+			echo "*********************************************************************************"
+  			exit
+  		fi	 		
   		
   		
   		# VIDEO SET-UP
@@ -2530,7 +2543,7 @@ Please select one of the following:
 ===============================================================================
 
   1. /Volumes/Plex
-  2. /mnt/x
+  2. /mnt/p
   0. Quit
 	
 ===============================================================================
@@ -2546,7 +2559,7 @@ _EOF_
           	break
           	;;
       	2)
-      	  	dirPlexDir="/mnt/x"
+      	  	dirPlexDir="/mnt/p"
           	break
           	;;
         0)
@@ -2583,7 +2596,7 @@ Please select one of the following:
 ===============================================================================
 
   1. /Volumes/Media
-  2. /mnt/z
+  2. /mnt/m
   0. Quit
 	
 ===============================================================================
@@ -2599,7 +2612,7 @@ _EOF_
           	break
           	;;
       	2)
-      	  	dirMediaDir="/mnt/z"
+      	  	dirMediaDir="/mnt/m"
           	break
           	;;
         0)

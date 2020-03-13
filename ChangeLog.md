@@ -3,6 +3,8 @@
 ## 0.28 ##
 _28 February 2020_
 - Added menu options for Intel QSV and Apple VideoToolbox overrides
+- Updated QSV and VT interactive text
+- Updated Ubuntu/WSL mount points for Plex and Media NAS mounts
 
 
 ## 0.27 ##
