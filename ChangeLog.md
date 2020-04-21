@@ -1,5 +1,9 @@
 # Change Log #
 
+## 0.29 ##
+_22 April 2020_
+
+
 ## 0.28 ##
 _21 April 2020_
 - Added menu options for Intel QSV and Apple VideoToolbox overrides
