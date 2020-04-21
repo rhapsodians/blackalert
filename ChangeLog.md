@@ -1,10 +1,12 @@
 # Change Log #
 
 ## 0.28 ##
-_28 February 2020_
+_21 April 2020_
 - Added menu options for Intel QSV and Apple VideoToolbox overrides
 - Updated QSV and VT interactive text
 - Updated Ubuntu/WSL mount points for Plex and Media NAS mounts
+- Added `--cuvid` by default. Nvidia drivers from 20 April do not have the same AVC/MPEG2 penalty as before (approx 10-15% slowdown on FPS). By having CUVID decoding, the decode-Cudu-encode stream stays on the GPU. It also addresses an issue with VC-1 where decoding is done by `-hwaccel auto` which moves decoding to QSV (possibly the original root cause of the slowdown). This means that AVC, MPEG2 and VC-1 all have similar 130-135fps transcodes on the GTX1660
+- Moved bitrate options to the audio submenus
 
 
 ## 0.27 ##

@@ -565,16 +565,16 @@ Please select one of the following:
 		- Copy all audio tracks (no audio transcoding)
 		- EAC-3 surround & AAC stereo/mono
 		- Enable DTS pass-through
-		- Keep AC-3 stereo 		
+		- Keep AC-3 stereo
+		- Surround bitrate override
+		- Stereo bitrate override
+		- Mono bitrate override		 		
 	8. MORE Options
 		- Create single/unified mkvpropedit script
 		- Use --x264-avbr software encoding
 		- QSV h/w transcoding (Windows)
 		- VideoToolbox h/w transcoding (Mac)
 		- Disable forced subtitle burn-in
-		- Surround bitrate override
-		- Stereo bitrate override
-		- Mono bitrate override	
 	9. Next
 	0. Quit
 
@@ -664,17 +664,20 @@ Please select one of the following:
 	2. Copy all audio tracks (no transcoding)
 	3. EAC-3 surround & AAC stereo/mono
 	4. Enable DTS pass-through
-	5. Keep AC-3 stereo 
-	6. Back
+	5. Keep AC-3 stereo
+	6. Surround bitrate override
+	7. Stereo bitrate override
+	8. Mono bitrate override	 
+	9. Back
 	0. Quit
 
 =================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-6] > "
+	  read -p "Enter selection [0-9] > "
 
-  		if [[ $REPLY =~ ^[0-6]$ ]]; then
+  		if [[ $REPLY =~ ^[0-9]$ ]]; then
     	case $REPLY in
      	1)
            	step4_ffprobe_tsv
@@ -700,8 +703,23 @@ _EOF_
       		step4_ffprobe_tsv
       	  	step4_KeepAC3Stereo
           	continue
-          	;;          
+          	;; 
         6)
+        	step4_ffprobe_tsv
+      	  	step4_SurroundBitrateOverride
+          	continue
+          	;; 
+        7)
+            step4_ffprobe_tsv
+      	  	step4_StereoBitrateOverride
+          	continue
+          	;;  
+        8)
+      		step4_ffprobe_tsv
+      	  	step4_MonoBitrateOverride
+          	continue
+          	;;           	         
+        9)
         	break
         	;;	
         0)
@@ -726,7 +744,7 @@ step4_track_editing_MoreOptions() {
 	cat << _EOF_
 
 =================================================================
-AUDIO OPTIONS
+MORE OPTIONS
 =================================================================
 
 Please select one of the following:
@@ -736,19 +754,16 @@ Please select one of the following:
 	3. QSV h/w transcoding (Windows)
 	4. VideoToolbox h/w transcoding (Mac)
 	5. Disable forced subtitle burn-in	
-	6. Surround bitrate override
-	7. Stereo bitrate override
-	8. Mono bitrate override
-	9. Back
+	6. Back
 	0. Quit
 
 =================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-9] > "
+	  read -p "Enter selection [0-6] > "
 
-  		if [[ $REPLY =~ ^[0-9]$ ]]; then
+  		if [[ $REPLY =~ ^[0-6]$ ]]; then
     	case $REPLY in
      	1)
            	step4_ffprobe_tsv
@@ -774,23 +789,8 @@ _EOF_
       	  	step4_ffprobe_tsv
       	  	step4_DisableForcedSubtitleAutoBurnIn
           	continue
-          	;;
-      	6)
-      	  	step4_ffprobe_tsv
-      	  	step4_SurroundBitrateOverride
-          	continue
-          	;;
-      	7)
-      	  	step4_ffprobe_tsv
-      	  	step4_StereoBitrateOverride
-          	continue
-          	;;
-      	8)
-      	  	step4_ffprobe_tsv
-      	  	step4_MonoBitrateOverride
-          	continue
           	;;          	          	          	
-        9)
+        6)
         	break
         	;;	
         0)
@@ -1917,6 +1917,12 @@ other-transcode_commands() {
   		
   		# VIDEO SET-UP
 		# ---------------------------------------------------
+   		# CUVID added on 21-Apr-2020 because the 10-15% slowdown penalty seems to have been removed by the latest
+   		# Nvidia drivers. Additionally, there's a bug in ffmpeg where it automatically uses QSV for VC-1 decode 
+   		# triggered by `-hwaccel auto`. By using CUVID, all decoding remains within the GPU reducing CPU load plus
+   		# allows VC-1 decode/encode to run at the same speed as AVC, thus bringing a 115-120fps average up to
+   		# approx. 130-135fps.
+   		 		
    		 		
   		if [[ "$str05X264AVBRActive" = "true" ]]
   			then
@@ -1933,7 +1939,7 @@ other-transcode_commands() {
 			arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --vt --hevc ) 
   		else
 			# arrHwTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
-			arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
+			arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq --cuvid )
 		fi			
 
 
@@ -2874,42 +2880,99 @@ _EOF_
 
 
 
+##########################################################################
+# POST-STEP01 - Correctly title the transcoded audio titles              #
+##########################################################################
+
+
+step1_post_ffprobe_command() {
+
+	ffprobe -v error -show_entries stream=index,format,codec_name,profile,channel_layout,channels,codec_type,field_order:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
+
+}
+
+
+
+add_titles_to_transcoded_audio() {
+
+	echo "*******************************************************************************"
+	echo "Starting Step 1 - Correctly title the transcoded audio titles" 
+	echo ""
+	echo ""
+
+#	IFS=$'\n'
+#	
+#	# Source Directory
+#	dirSourceTranscodedMkv="$dirTranscodedWorkDir"
+#	
+#	cd $dirSourceTranscodedMkv
+#			
+#	for strP01MkvName in `find . -type f -name "*.mkv" | sort`
+#	do
+#		strP01MkvName=${strP01MkvName/\.\//}
+#
+	#	We could start iterating of the above with a Bash for loop if our data does not contain spaces or newlines. 
+	#	But since titles contain spaces, we better base64 encode each item. 
+#
+#	sample='[{"name":"foo"},{"name":"bar"}]'
+#	for row in $(echo "${sample}" | jq -r '.[] | @base64'); do
+#	    _jq() {
+#	     echo ${row} | base64 --decode | jq -r ${1}
+#	    }
+#	
+#   	echo $(_jq '.name')
+#	done
+#
+#
+#		strP01AudioStreamCount=$( step1_post_ffprobe_command $strP01MkvName | jq -c '.streams[] | select(.codec_type=="audio")' | wc -l )
+#
+#		for ((i=1;i<=strP01AudioStreamCount;i++)); do
+ #   		echo $i
+#		done
+#
+#ffprobe -v error -show_entries stream=index,format,codec_name,profile,channel_layout,channels,codec_type,field_order:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 ./Frozen\ \(2013\).mkv | jq -r '.streams[] | select(.codec_type=="audio" and .index==1) | .index, .codec_name, .channels, .channel_layout, .disposition.title'
+#
+#
+
+	echo " "
+	echo "Step 1 complete" 
+	echo "*******************************************************************************"	
+
+}
+
 
 
 ##########################################################################
-# POST-STEP01 - Create Folders                                           #
+# POST-STEP02 - Create Folders                                           #
 ##########################################################################
 
 
 create_folder_and_move() {
 
 	echo "*******************************************************************************"
-	echo "Starting Step 1 - creating the Plex folders for newly transcoded content" 
+	echo "Starting Step 2 - creating the Plex folders for newly transcoded content" 
 	echo ""
 	echo ""
-
-
-
 
 	IFS=$'\n'
 	
 	cd $dirTranscodedWorkDir
 			
-	for strP01FileName in `find . -type f -name "*.mkv" | sort` 
+	for strP02FileName in `find . -type f -name "*.mkv" | sort` 
 		do
 		# Removes the leading ./ from the filename
-		strP01FileName=${strP01FileName/\.\//}
+		strP02FileName=${strP02FileName/\.\//}
 		# Determine if it's a Movie or a TV show
 		strTVRegEx="([sS]([0-9]{2,}|[X]{2,})[eE]([0-9]{2,}|[Y]{2,}))"
 		
-		if [[ "$strP01FileName" =~ $strTVRegEx ]]
+		if [[ "$strP02FileName" =~ $strTVRegEx ]]
 		then
 			# Determine the Show name
-			strTVShowName=$( echo "$strP01FileName" | cut -d"-" -f1 | sed 's/.$//g' )
+			strTVShowName=$( echo "$strP02FileName" | cut -d"-" -f1 | sed 's/.$//g' )
 
 			# Determine the Season number
-			#strTVShowSeasonNo=$( echo "$strP01FileName" | sed 's/.*\ -\ S//g' | cut -c1-2 | sed 's/^0*//g' )
-			strTVShowSeasonNo=$( echo "$strP01FileName" | cut -d"-" -f2 | sed 's/.*\ S//g' | cut -c1-2 | sed 's/^0*//g' )
+			#strTVShowSeasonNo=$( echo "$strP02FileName" | sed 's/.*\ -\ S//g' | cut -c1-2 | sed 's/^0*//g' )
+			strTVShowSeasonNo=$( echo "$strP02FileName" | cut -d"-" -f2 | sed 's/.*\ S//g' | cut -c1-2 | sed 's/^0*//g' )
 
 			if [ ! -d ${dirTranscodedWorkDir}/${strTVShowName} ]
 			then
@@ -2923,15 +2986,15 @@ create_folder_and_move() {
 
 			fi
 			
-			mv -v -i $dirTranscodedWorkDir/$strP01FileName ${dirTranscodedWorkDir}/${strTVShowName}/${strTVShowSeasonFolder}/${strP01FileName}
+			mv -v -i $dirTranscodedWorkDir/$strP02FileName ${dirTranscodedWorkDir}/${strTVShowName}/${strTVShowSeasonFolder}/${strP02FileName}
 			
 		else	
 
-			strP01File=$(basename $strP01FileName)		
-			strRawName=$(echo $strP01File | sed 's/\.mkv//g')
+			strP02File=$(basename $strP02FileName)		
+			strRawName=$(echo $strP02File | sed 's/\.mkv//g')
 			
 			mkdir ${strRawName}
-			mv -v -i $dirTranscodedWorkDir/$strP01FileName $dirTranscodedWorkDir/${strRawName}/${strP01FileName}
+			mv -v -i $dirTranscodedWorkDir/$strP02FileName $dirTranscodedWorkDir/${strRawName}/${strP02FileName}
 	  		
 		    read line </dev/null
 		fi 
@@ -2939,7 +3002,7 @@ create_folder_and_move() {
 		done
 		
 	echo " "
-	echo "Step 1 complete" 
+	echo "Step 2 complete" 
 	echo "*******************************************************************************"	
 	echo ""
 		
@@ -2948,14 +3011,14 @@ create_folder_and_move() {
 
 
 ##########################################################################
-# POST-STEP02 - Copy generated commands to Media                         #
+# POST-STEP03 - Copy generated commands to Media                         #
 ##########################################################################
 
 
 copy_commands_to_media() {
 
 	echo "*******************************************************************************"
-	echo "Starting Step 2 - Copy generated commands to Media" 
+	echo "Starting Step 3 - Copy generated commands to Media" 
 	echo ""
 	echo ""
 
@@ -2971,26 +3034,26 @@ copy_commands_to_media() {
 	
 	cd $dirSourceCommands
 
-	for strP02FileName in `find . -type f -name "*.other-transcode.command.txt" | sed 's/\.\///g' | sort` 
+	for strP03FileName in `find . -type f -name "*.other-transcode.command.txt" | sed 's/\.\///g' | sort` 
 		do
-			if [ ! -f $dirDestinationCommands/$strP02FileName ]
+			if [ ! -f $dirDestinationCommands/$strP03FileName ]
 			then
-				if cp -v -i $dirSourceCommands/$strP02FileName $dirDestinationCommands/$strP02FileName
+				if cp -v -i $dirSourceCommands/$strP03FileName $dirDestinationCommands/$strP03FileName
 				then
 					echo "Copy successful"
-					rm -v $dirSourceCommands/$strP02FileName
+					rm -v $dirSourceCommands/$strP03FileName
 				else
 					echo "Copy failure, exit status $?"
 					exit
 				fi		
 			else
 				strTimestamp=$(date +%Y.%m.%d_%H%M%S)
-				mv -v -i $dirDestinationCommands/$strP02FileName $dirDestinationCommands/${strTimestamp}-${strP02FileName}
+				mv -v -i $dirDestinationCommands/$strP03FileName $dirDestinationCommands/${strTimestamp}-${strP03FileName}
 				
-				if cp -v -i $dirSourceCommands/$strP02FileName $dirDestinationCommands/$strP02FileName
+				if cp -v -i $dirSourceCommands/$strP03FileName $dirDestinationCommands/$strP03FileName
 				then
 					echo "Copy successful"
-					rm -v $dirSourceCommands/$strP02FileName
+					rm -v $dirSourceCommands/$strP03FileName
 				else
 					echo "Copy failure, exit status $?"
 					exit
@@ -3002,26 +3065,26 @@ copy_commands_to_media() {
 		done
 
 
-	for strP02FileName2 in `find . -type f -name "*.other-transcode.override.command.txt" | sed 's/\.\///g' | sort` 
+	for strP03FileName2 in `find . -type f -name "*.other-transcode.override.command.txt" | sed 's/\.\///g' | sort` 
 		do
-			if [ ! -f $dirDestinationOverrides/$strP02FileName2 ]
+			if [ ! -f $dirDestinationOverrides/$strP03FileName2 ]
 			then
-				if cp -v -i $dirSourceCommands/$strP02FileName2 $dirDestinationOverrides/$strP02FileName2
+				if cp -v -i $dirSourceCommands/$strP03FileName2 $dirDestinationOverrides/$strP03FileName2
 				then
 					echo "Copy successful"
-					rm -v $dirSourceCommands/$strP02FileName2
+					rm -v $dirSourceCommands/$strP03FileName2
 				else
 					echo "Copy failure, exit status $?"
 					exit
 				fi		
 			else
 				strTimestamp=$(date +%Y.%m.%d_%H%M%S)
-				mv -v -i $dirDestinationOverrides/$strP02FileName2 $dirDestinationOverrides/${strTimestamp}-${strP02FileName2}
+				mv -v -i $dirDestinationOverrides/$strP03FileName2 $dirDestinationOverrides/${strTimestamp}-${strP03FileName2}
 				
-				if cp -v -i $dirSourceCommands/$strP02FileName2 $dirDestinationOverrides/$strP02FileName2
+				if cp -v -i $dirSourceCommands/$strP03FileName2 $dirDestinationOverrides/$strP03FileName2
 				then
 					echo "Copy successful"
-					rm -v $dirSourceCommands/$strP02FileName2
+					rm -v $dirSourceCommands/$strP03FileName2
 				else
 					echo "Copy failure, exit status $?"
 					exit
@@ -3044,7 +3107,7 @@ copy_commands_to_media() {
 
 
 	echo " "
-	echo "Step 2 complete" 
+	echo "Step 3 complete" 
 	echo "*******************************************************************************"	
 	echo ""
 
@@ -3055,13 +3118,13 @@ copy_commands_to_media() {
 
 
 ##########################################################################
-# POST-STEP03 - Copy generated summary folders to Media                  #
+# POST-STEP04 - Copy generated summary folders to Media                  #
 ##########################################################################
 
 copy_summaries_to_media() {
 
 	echo "*******************************************************************************"
-	echo "Starting Step 3 - Copy generated summary folders to Media" 
+	echo "Starting Step 4 - Copy generated summary folders to Media" 
 	echo ""
 	echo ""
 
@@ -3075,89 +3138,27 @@ copy_summaries_to_media() {
 	
 	cd $dirSourceSummaries
 			
-	for strP03DirName in `ls -d * | sort` 
-#	for strP03DirName in `find . -type d -not -path '\.' | sed 's/\.\///g' | sort` 
+	for strP04DirName in `ls -d * | sort` 
+#	for strP04DirName in `find . -type d -not -path '\.' | sed 's/\.\///g' | sort` 
 	do
-		if [ ! -d $dirDestinationSummaries/$strP03DirName ]
+		if [ ! -d $dirDestinationSummaries/$strP04DirName ]
 			then
-				if cp -rv -i $dirSourceSummaries/$strP03DirName $dirDestinationSummaries/$strP03DirName
+				if cp -rv -i $dirSourceSummaries/$strP04DirName $dirDestinationSummaries/$strP04DirName
 				then
 					echo "Copy successful"
-					rm -rv $dirSourceSummaries/$strP03DirName
+					rm -rv $dirSourceSummaries/$strP04DirName
 				else
 					echo "Copy failure, exit status $?"
 					exit
 				fi		
 			else
 				strTimestamp=$(date +%Y.%m.%d_%H%M%S)
-				mv -v -i $dirDestinationSummaries/$strP03DirName $dirDestinationSummaries/${strTimestamp}-${strP03DirName}
+				mv -v -i $dirDestinationSummaries/$strP04DirName $dirDestinationSummaries/${strTimestamp}-${strP04DirName}
 				
-				if cp -rv -i $dirSourceSummaries/$strP03DirName $dirDestinationSummaries/$strP03DirName
+				if cp -rv -i $dirSourceSummaries/$strP04DirName $dirDestinationSummaries/$strP04DirName
 				then
 					echo "Copy successful"
-					rm -rv $dirSourceSummaries/$strP03DirName
-				else
-					echo "Copy failure, exit status $?"
-					exit
-				fi
-							
-			fi	
-	  		
-		    read line </dev/null
-		done
-
-	echo " "
-	echo "Step 3 complete" 
-	echo "*******************************************************************************"	
-
-
-}
-
-
-
-##########################################################################
-# POST-STEP04 - Copy transcoded logs to NAS                               #
-##########################################################################
-
-copy_transcoded_log_to_media() {
-
-	echo "*******************************************************************************"
-	echo "Starting Step 4 - Copy transcoded logs to NAS" 
-	echo ""
-	echo ""
-
-	IFS=$'\n'
-	
-	# Source Directory
-	dirSourceTranscodedLog="$dirTranscodedWorkDir"
-	
-	# Destination Directory
-	dirDestinationTranscodedLog="$dirMediaDir/Transcoding/Logs"
-	
-	cd $dirSourceTranscodedLog
-			
-	for strP04LogName in `find . -type f -name "*.mkv.log" | sort`
-	do
-		strP04LogName=${strP04LogName/\.\//}
-
-		if [ ! -f $dirDestinationTranscodedLog/$strP04LogName ]
-			then
-				if cp -v -i $dirSourceTranscodedLog/$strP04LogName $dirDestinationTranscodedLog/$strP04LogName
-				then
-					echo "Copy successful"
-					rm -rv $dirSourceTranscodedLog/$strP04LogName
-				else
-					echo "Copy failure, exit status $?"
-					exit
-				fi		
-			else
-				strTimestamp=$(date +%Y.%m.%d_%H%M%S)
-				mv -v -i $dirDestinationTranscodedLog/$strP04LogName $dirDestinationTranscodedLog/${strTimestamp}-${strP04LogName}
-				
-				if cp -v -i $dirSourceTranscodedLog/$strP04LogName $dirDestinationTranscodedLog/$strP04LogName
-				then
-					echo "Copy successful"
-					rm -v $dirSourceTranscodedLog/$strP04LogName
+					rm -rv $dirSourceSummaries/$strP04DirName
 				else
 					echo "Copy failure, exit status $?"
 					exit
@@ -3176,14 +3177,77 @@ copy_transcoded_log_to_media() {
 }
 
 
+
 ##########################################################################
-# POST-STEP05 - Copy transcoded content to Plex                          #
+# POST-STEP05 - Copy transcoded logs to NAS                               #
+##########################################################################
+
+copy_transcoded_log_to_media() {
+
+	echo "*******************************************************************************"
+	echo "Starting Step 5 - Copy transcoded logs to NAS" 
+	echo ""
+	echo ""
+
+	IFS=$'\n'
+	
+	# Source Directory
+	dirSourceTranscodedLog="$dirTranscodedWorkDir"
+	
+	# Destination Directory
+	dirDestinationTranscodedLog="$dirMediaDir/Transcoding/Logs"
+	
+	cd $dirSourceTranscodedLog
+			
+	for strP05LogName in `find . -type f -name "*.mkv.log" | sort`
+	do
+		strP05LogName=${strP05LogName/\.\//}
+
+		if [ ! -f $dirDestinationTranscodedLog/$strP05LogName ]
+			then
+				if cp -v -i $dirSourceTranscodedLog/$strP05LogName $dirDestinationTranscodedLog/$strP05LogName
+				then
+					echo "Copy successful"
+					rm -rv $dirSourceTranscodedLog/$strP05LogName
+				else
+					echo "Copy failure, exit status $?"
+					exit
+				fi		
+			else
+				strTimestamp=$(date +%Y.%m.%d_%H%M%S)
+				mv -v -i $dirDestinationTranscodedLog/$strP05LogName $dirDestinationTranscodedLog/${strTimestamp}-${strP05LogName}
+				
+				if cp -v -i $dirSourceTranscodedLog/$strP05LogName $dirDestinationTranscodedLog/$strP05LogName
+				then
+					echo "Copy successful"
+					rm -v $dirSourceTranscodedLog/$strP05LogName
+				else
+					echo "Copy failure, exit status $?"
+					exit
+				fi
+							
+			fi	
+	  		
+		    read line </dev/null
+		done
+
+	echo " "
+	echo "Step 5 complete" 
+	echo "*******************************************************************************"	
+
+
+}
+
+
+
+##########################################################################
+# POST-STEP06 - Copy transcoded content to Plex                          #
 ##########################################################################
 
 copy_transcoded_content_to_plex() {
 
 	echo "*******************************************************************************"
-	echo "Starting Step 5 - Copy transcoded content to Plex" 
+	echo "Starting Step 6 - Copy transcoded content to Plex" 
 	echo ""
 	echo ""
 
@@ -3213,7 +3277,7 @@ copy_transcoded_content_to_plex() {
 
 
 	echo " "
-	echo "Step 5 complete" 
+	echo "Step 6 complete" 
 	echo "*******************************************************************************"	
 
 
@@ -3222,13 +3286,13 @@ copy_transcoded_content_to_plex() {
 
 
 ##########################################################################
-# POST-STEP06 - Copy raw MKV content to Media                            #
+# POST-STEP07 - Copy raw MKV content to Media                            #
 ##########################################################################
 
 copy_raw_content_to_media() {
 
 	echo "*******************************************************************************"
-	echo "Starting Step 6 - Copy raw MKV content to Media" 
+	echo "Starting Step 7 - Copy raw MKV content to Media" 
 	echo ""
 	echo ""
 
@@ -3257,7 +3321,7 @@ copy_raw_content_to_media() {
 
 
 	echo " "
-	echo "Step 6 complete" 
+	echo "Step 7 complete" 
 	echo "*******************************************************************************"	
 
 
@@ -3284,22 +3348,25 @@ post_runbook() {
 	echo "Start time:   $strStartDateTime"
 	echo ""
 
-	# Step 1:  	Transcoded content folder creation
+	# Step 1:  	Correctly title the transcoded audio titles
+	add_titles_to_transcoded_audio
+	
+	# Step 2:  	Transcoded content folder creation
 	create_folder_and_move
 
-	# Step 2:  	Commands to Media
+	# Step 3:  	Commands to Media
 	copy_commands_to_media
 	
-	# Step 3:  	Summaries to Media
+	# Step 4:  	Summaries to Media
 	copy_summaries_to_media
 
-	# Step 4:  	Transcoded log file to Media
+	# Step 5:  	Transcoded log file to Media
 	copy_transcoded_log_to_media
 
-	# Step 5:  	Transcoded content - copy to Plex
+	# Step 6:  	Transcoded content - copy to Plex
 	copy_transcoded_content_to_plex
 
-	# Step 6:  	Copy raw MKV content to Media
+	# Step 7:  	Copy raw MKV content to Media
 	copy_raw_content_to_media
 
 
