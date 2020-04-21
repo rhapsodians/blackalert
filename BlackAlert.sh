@@ -1893,26 +1893,35 @@ other-transcode_commands() {
   			str05UseVideoToolBox=$( grep UseVideoToolBox $str05OverrideFile | cut -d"," -f2 2>&1)
 		fi	
 
+		# By default, the Windows E: location (set in strWinFile) will be used to specify the source path in other-transcode commands
+		# When using a Mac with VideoToolBox, the Mac source path should be provided.
+		# When Mac-based other-transcode commands are generated, they should be in a .sh script and not a Windows .bat script.
+		
+		if [[ "$str05UseVideoToolBox" = "true" ]]
+		then
+			strMacFile="${dirMacWorkDir}/04_ReadyForTranscoding/${str05File}"
+		fi	
+
 
   		declare -a arrHwTranscodeCommand=()
   		
   		
-  		if [[ "$str05UseQSV" = "true" ]] || [[ "$str05UseVideoToolBox" = "true" ]] || [[ "$str05SetCopyVideo" = "true" ]]
-  		then
- 			echo "*********************************************************************************"
-			echo "WARNING:    "
-			echo ""
-			echo "$FILE"
-			echo "" 			
-  			echo "Combinations of QSV, VideoToolbox or --copy-all video have been set"
-  			echo "Only one of the above is allowed for transcoding."
-  			echo "please re-run and delete the previously generated commands"
-  			echo ""
-			echo "Exiting now ..."
-			echo ""
-			echo "*********************************************************************************"
-  			exit
-  		fi	 		
+#  		if [[ "$str05UseQSV" = "true" ]] || [[ "$str05UseVideoToolBox" = "true" ]] || [[ "$str05SetCopyVideo" = "true" ]]
+#  		then
+# 			echo "*********************************************************************************"
+#			echo "WARNING:    "
+#			echo ""
+#			echo "$FILE"
+#			echo "" 			
+#  			echo "Combinations of QSV, VideoToolbox or --copy-all video have been set"
+#  			echo "Only one of the above is allowed for transcoding."
+#  			echo "please re-run and delete the previously generated commands"
+#  			echo ""
+#			echo "Exiting now ..."
+#			echo ""
+#			echo "*********************************************************************************"
+#  			exit
+#  		fi	 		
   		
   		
   		# VIDEO SET-UP
@@ -1923,25 +1932,37 @@ other-transcode_commands() {
    		# allows VC-1 decode/encode to run at the same speed as AVC, thus bringing a 115-120fps average up to
    		# approx. 130-135fps.
    		 		
-   		 		
-  		if [[ "$str05X264AVBRActive" = "true" ]]
-  			then
-  			arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --x264-avbr --crop auto )
-  			
-  		elif [[ "$str05SetCopyVideo" = "true" ]]
-  		 	then
-  		 	arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --copy-video )
-		elif [[ "$str05UseQSV" = "true" ]]
-			then
-			arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
-		elif [[ "$str05UseVideoToolBox" = "true" ]]
-			then
-			arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --vt --hevc ) 
-  		else
-			# arrHwTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
-			arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq --cuvid )
-		fi			
 
+		if [[ "$str05UseVideoToolBox" = "true" ]]
+		then
+		
+			if [[ "$str05X264AVBRActive" = "true" ]]
+				then
+				arrHwTranscodeRbCommand=(other-transcode \"${strMacFile}\" --x264-avbr --crop auto )
+				
+			elif [[ "$str05SetCopyVideo" = "true" ]]
+			 	then
+			 	arrHwTranscodeRbCommand=(other-transcode \"${strMacFile}\" --copy-video )
+			else
+				arrHwTranscodeRbCommand=(other-transcode \"${strMacFile}\" --vt --hevc ) 
+			fi
+		
+   		else 
+			if [[ "$str05X264AVBRActive" = "true" ]]
+				then
+				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --x264-avbr --crop auto )
+				
+			elif [[ "$str05SetCopyVideo" = "true" ]]
+			 	then
+			 	arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --copy-video )
+			elif [[ "$str05UseQSV" = "true" ]]
+				then
+				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
+			else
+				# arrHwTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
+				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq --cuvid )
+			fi			
+		fi
 
 
 
@@ -2336,16 +2357,37 @@ other-transcode_commands() {
 
 other-transcode_commands_concatenate () {
 
+	cd $dirOutboxCommands
+	
 	echo ""
-	echo "  - Building \"commands.bat\" file for Windows transcoding"
+	echo "  - Building concatenated file(s) for transcoding"
+	
+	strWinCommandsFile="commands.bat"
+	strMacCommandsFile="commands.sh"
 
-	if [ -f $dirOutboxCommands/commands.bat ]
+
+	if [ -f $dirOutboxCommands/${strWinCommandsFile} ]
 	then
-		rm $dirOutboxCommands/commands.bat
-		cat $dirOutboxCommands/*.other-transcode.command.txt >> $dirOutboxCommands/commands.bat
-	else
-		cat $dirOutboxCommands/*.other-transcode.command.txt >> $dirOutboxCommands/commands.bat
+		rm $dirOutboxCommands/${strWinCommandsFile}
 	fi
+	if [ -f $dirOutboxCommands/${strMacCommandsFile} ]
+	then
+		rm $dirOutboxCommands/${strMacCommandsFile}
+	fi
+	
+	for str05CommandFileName in `find . -type f -name "*.other-transcode.command.txt" | sort` 
+	do
+		if grep "\-\-vt" $str05CommandFileName
+		then
+			cat $dirOutboxCommands/$str05CommandFileName >> $dirOutboxCommands/${strMacCommandsFile}
+		else
+			cat $dirOutboxCommands/$str05CommandFileName >> $dirOutboxCommands/${strWinCommandsFile}
+		fi
+		
+		read line </dev/null
+	done
+
+		
 
 	echo " "
 	echo "Step 5 complete" 
@@ -3096,8 +3138,10 @@ copy_commands_to_media() {
 		done
 
 
-
-
+	if [ -f $dirSourceCommands/commands.sh ]
+	then
+		rm -v $dirSourceCommands/commands.sh
+	fi
 
 	if [ -f $dirSourceCommands/commands.bat ]
 	then
