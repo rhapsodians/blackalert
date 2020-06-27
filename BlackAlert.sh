@@ -979,13 +979,13 @@ step4_rename_track() {
 			while true
     		do
     	       	read -p "Please choose a subtitle stream to rename:  index [${strStartingSubtitleStreamIndexNo}-${strEndingSubtitleStreamIndexNo}] > " number
-           		[[ $number =~ ^[0-9]+$ ]] || { echo "Enter a valid number"; continue; }
+	   	  		[[ $number =~ ^[0-9]+$ ]] || { echo "Enter a valid number"; continue; }
   				if ((number >= ${strStartingSubtitleStreamIndexNo} && number <= ${strEndingSubtitleStreamIndexNo}))
   				then
-    				break
-  				else
-    				echo "Please chose a valid steam index number, try again"
-  				fi
+ 					break
+ 				else
+ 	   				echo "Please chose a valid steam index number, try again"	
+ 	   			fi
 			done
            	;;
 	esac
