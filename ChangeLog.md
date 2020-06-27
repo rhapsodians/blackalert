@@ -1,5 +1,9 @@
 # Change Log #
 
+## 0.30 ##
+_27 June 2020_
+
+
 ## 0.29 ##
 _27 June 2020_
 - Changed Channel layout logic to channel count for better identification in assigning `--all-eac3`
