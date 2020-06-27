@@ -1,7 +1,10 @@
 # Change Log #
 
 ## 0.29 ##
-_22 April 2020_
+_27 June 2020_
+- Changed Channel layout logic to channel count for better identification in assigning `--all-eac3`
+- This also fixes `--add-audio 1=stereo` being added to raw stereo or mono sources.
+- Minor modifications to Default Audio checking
 
 
 ## 0.28 ##
