@@ -2,7 +2,7 @@
 
 ###############################################################################
 # BlackAlert.sh                                                               #
-# Version 0.28                                                                #
+# Version 0.29                                                                #
 #                                                                             #
 # Copyright 2020 - Joe Hurley                                                 #
 #                                                                             #
@@ -17,12 +17,12 @@
 
 clear
 SECONDS=0
-DELAY=3
+DELAY=2
 
 
 echo "############################################################################################"
 echo "#                                                                                          #"
-echo "# BLACKALERT.SH (v0.28)                                                                    #"
+echo "# BLACKALERT.SH (v0.29)                                                                    #"
 echo "#                                                                                          #"
 echo "############################################################################################"
 
@@ -979,13 +979,13 @@ step4_rename_track() {
 			while true
     		do
     	       	read -p "Please choose a subtitle stream to rename:  index [${strStartingSubtitleStreamIndexNo}-${strEndingSubtitleStreamIndexNo}] > " number
-           		[[ $number =~ ^[0-9]+$ ]] || { echo "Enter a valid number"; continue; }
+	   	  		[[ $number =~ ^[0-9]+$ ]] || { echo "Enter a valid number"; continue; }
   				if ((number >= ${strStartingSubtitleStreamIndexNo} && number <= ${strEndingSubtitleStreamIndexNo}))
   				then
-    				break
-  				else
-    				echo "Please chose a valid steam index number, try again"
-  				fi
+ 					break
+ 				else
+ 	   				echo "Please chose a valid steam index number, try again"	
+ 	   			fi
 			done
            	;;
 	esac
@@ -1848,6 +1848,7 @@ other-transcode_commands() {
   		str05DefaultAudioTrackIndex=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .index' )
   		str05DefaultAudioTrackCodec=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .codec_name' )
   		str05DefaultAudioTrackChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .channel_layout' )
+		str05DefaultAudioTrackChannels=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .channels' )
   		str05DefaultAudioTrackAudioCommentaryPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio") | .tags.title' | grep -i "Commentary" | wc -l )
  		str05DefaultAudioTrackCommentaryChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and contains(.tags.title="ommentary")) | .channel_layout' | sort -u )
 
@@ -1987,47 +1988,63 @@ other-transcode_commands() {
 		# The default is --all-eac3 for certain codecs. Otherwise it's AC3 and/or AAC
 		# 
 		
-		case $str05DefaultAudioTrackCodec in
 		
-			flac | ac3 | dts| truehd)
-				if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ] && [ "$str05EAC3SurroundAACStereoMono" = "true" ]
-				then
-					arrHwTranscodeRbCommand+=(--eac3)
-				else
-					arrHwTranscodeRbCommand+=(--all-eac3)	
-				fi	
-				;;
-			eac3)
-				if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ] && [ "$str05EAC3SurroundAACStereoMono" = "true" ]
-				then
-					arrHwTranscodeRbCommand+=()
-				else
-					arrHwTranscodeRbCommand+=(--all-eac3)	
-				fi	
-				;;				
-			pcm_s16le)
-				if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ] && [ "$str05EAC3SurroundAACStereoMono" = "true" ]
-				then
-					arrHwTranscodeRbCommand+=()
-				else
-					arrHwTranscodeRbCommand+=()	
-				fi	
-				;;	
-				
-			*)
-				echo "*********************************************************************************"
-				echo "WARNING:    "
-				echo ""
-				echo "$FILE"
-				echo ""
-				echo "The Default audio track is neither FLAC, EAC3, AC-3, DTS, TrueHD nor PSM_S16LE"
-				echo ""
-				echo "Please check ... exiting now"
-				echo "*********************************************************************************"
-				exit 1		
-				;;
-		esac		
+		if [ "$str05EAC3SurroundAACStereoMono" = "true" ]
+		then
+			case $str05DefaultAudioTrackCodec in
 		
+				flac | ac3 | dts| truehd)
+#					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
+					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
+					then
+						arrHwTranscodeRbCommand+=(--eac3)
+					else
+						arrHwTranscodeRbCommand+=(--all-eac3)	
+					fi	
+					;;
+				eac3)
+#					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
+					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
+					then
+						arrHwTranscodeRbCommand+=()
+					else
+						arrHwTranscodeRbCommand+=(--all-eac3)	
+					fi	
+					;;				
+				pcm_s16le)
+#					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
+					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
+					then
+						arrHwTranscodeRbCommand+=()
+					else
+						arrHwTranscodeRbCommand+=()	
+					fi	
+					;;	
+					
+				*)
+					echo "*********************************************************************************"
+					echo "WARNING:    "
+					echo ""
+					echo "$FILE"
+					echo ""
+					echo "The Default audio track is neither FLAC, EAC3, AC-3, DTS, TrueHD nor PSM_S16LE"
+					echo ""
+					echo "Please check ... exiting now"
+					echo "*********************************************************************************"
+					exit 1		
+				;;
+			esac
+			
+#		elif [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
+		elif [ "$str05DefaultAudioTrackChannels" = "1" ] || [ "$str05DefaultAudioTrackChannels" = "2" ] || [ "$str05DefaultAudioTrackChannels" = "3" ]
+
+			then
+				arrHwTranscodeRbCommand+=()
+		else
+				arrHwTranscodeRbCommand+=(--all-eac3)	
+		fi
+		
+	
 		
 		
 		# Main Audio Settings
@@ -2086,13 +2103,17 @@ other-transcode_commands() {
 		case $str05DefaultAudioTrackCodec in
 		
 			flac|eac3|ac3|dts|truehd|pcm_s16le)
-				if [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
+#				if [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
+				if [ "$str05DefaultAudioTrackChannels" = "1" ]
 				then
 					arrHwTranscodeRbCommand+=()					
-				elif [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ]
+#				elif [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ]
+				elif [ "$str05DefaultAudioTrackChannels" = "2" ]
 				then
 					arrHwTranscodeRbCommand+=()
-				elif [ "$str05DefaultAudioTrackChannelLayout" = "3.0" ]
+#				elif [ "$str05DefaultAudioTrackChannelLayout" = "3.0" ]
+				elif [ "$str05DefaultAudioTrackChannels" = "3" ]
+
 				then
 					arrHwTranscodeRbCommand+=()
 				else
