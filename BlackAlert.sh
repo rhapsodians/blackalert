@@ -2,7 +2,7 @@
 
 ###############################################################################
 # BlackAlert.sh                                                               #
-# Version 0.29                                                                #
+# Version 0.30                                                                #
 #                                                                             #
 # Copyright 2020 - Joe Hurley                                                 #
 #                                                                             #
@@ -22,7 +22,7 @@ DELAY=2
 
 echo "############################################################################################"
 echo "#                                                                                          #"
-echo "# BLACKALERT.SH (v0.29)                                                                    #"
+echo "# BLACKALERT.SH (v0.30)                                                                    #"
 echo "#                                                                                          #"
 echo "############################################################################################"
 
@@ -2449,7 +2449,8 @@ post_setup_checks() {
 	echo "Original RAW Content Directory:  	$dirReadyForTranscoding"
 	echo "Transcoded Content Directory:  	$dirTranscodedWorkDir"
 	echo "Plex Directory:  	$dirPlexDir"
-	echo "NAS Media Directory:  	$dirMediaDir"
+	echo "Dropbox Logs Directory:  	$dirDropboxLogsDir"
+	echo "Media Directory:  	$dirMediaDir"
 	echo "-------------------------------------------------------------------------------"
 	echo ""
 	echo ""
@@ -2656,16 +2657,15 @@ while true; do
 
 
 
-
 -------------------------------------------------------------------------------
-NAS Media Set-up
+Dropbox Logs Set-up
 -------------------------------------------------------------------------------
 
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/Media
-  2. /mnt/m
+  1. /Users/joe/Dropbox/Transcoding_Output
+  2. /mnt/c/Users/Joe/Dropbox/Transcoding_Output
   0. Quit
 	
 ===============================================================================
@@ -2677,11 +2677,11 @@ _EOF_
   		if [[ $REPLY =~ ^[0-2]$ ]]; then
     	case $REPLY in
      	1)
-           	dirMediaDir="/Volumes/Media"
+           	dirDropboxLogsDir="/Users/joe/Dropbox"
           	break
           	;;
       	2)
-      	  	dirMediaDir="/mnt/m"
+      	  	dirDropboxLogsDir="/mnt/c/Users/Joe/Dropbox"
           	break
           	;;
         0)
@@ -2696,7 +2696,66 @@ _EOF_
 
 	echo ""
 	echo ""
-	echo "NAS Media Directory:  	$dirMediaDir"
+	echo "Dropbox Logs Directory:  	$dirDropboxLogsDir"
+	echo "-------------------------------------------------------------------------------"
+	echo ""
+	echo ""
+	echo ""
+
+while true; do
+	cat << _EOF_
+
+
+-------------------------------------------------------------------------------
+Media Set-up
+-------------------------------------------------------------------------------
+
+Please select one of the following:
+===============================================================================
+
+  1. /Volumes/Media
+  2. /Volumes/4TB/_MEDIA_FOR_NAS
+  3. /mnt/m
+  4. /mnt/e/_MEDIA_FOR_NAS
+  0. Quit
+	
+===============================================================================
+
+_EOF_
+
+	  read -p "Enter selection [0-4] > "
+
+  		if [[ $REPLY =~ ^[0-4]$ ]]; then
+    	case $REPLY in
+     	1)
+           	dirMediaDir="/Volumes/Media/_New"
+          	break
+          	;;
+        2)  
+        	dirMediaDir="/Volumes/4TB/_MEDIA_FOR_NAS"
+          	break
+          	;; 	
+      	3)
+      	  	dirMediaDir="/mnt/m/_New"
+          	break
+          	;;
+        4)
+        	dirMediaDir="/mnt/e/_MEDIA_FOR_NAS"
+          	break
+          	;; 	
+        0)
+        	exit
+        	;;	
+    	esac
+  	else
+    	echo "Invalid entry."
+    	sleep $DELAY
+  	fi
+	done
+
+	echo ""
+	echo ""
+	echo "Media Directory:  	$dirMediaDir"
 	echo "-------------------------------------------------------------------------------"
 	echo ""
 	echo ""
@@ -2890,10 +2949,58 @@ while true; do
 	cat << _EOF_
 
 
+-------------------------------------------------------------------------------
+Dropbox Logs Set-up
+-------------------------------------------------------------------------------
+
+Please select one of the following:
+===============================================================================
+
+  1. /Volumes/4TB/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output
+  2. /mnt/e/_Pretend_Dropbox/Transcoding_Output
+  0. Quit
+	
+===============================================================================
+
+_EOF_
+
+	  read -p "Enter selection [0-2] > "
+
+  		if [[ $REPLY =~ ^[0-2]$ ]]; then
+    	case $REPLY in
+     	1)
+           	dirDropboxLogsDir="/Volumes/4TB/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output"
+          	break
+          	;;
+      	2)
+      	  	dirDropboxLogsDir="/mnt/e/_Pretend_Dropbox/Transcoding_Output"
+          	break
+          	;;
+        0)
+        	exit
+        	;;	
+    	esac
+  	else
+    	echo "Invalid entry."
+    	sleep $DELAY
+  	fi
+	done
+
+	echo ""
+	echo ""
+	echo "Dropbox Logs Directory:  	$dirDropboxLogsDir"
+	echo "-------------------------------------------------------------------------------"
+	echo ""
+	echo ""
+	echo ""
+
+
+while true; do
+	cat << _EOF_
 
 
 -------------------------------------------------------------------------------
-NAS Media Set-up
+Media Set-up
 -------------------------------------------------------------------------------
 
 Please select one of the following:
@@ -2916,7 +3023,7 @@ _EOF_
           	break
           	;;
       	2)
-      	  	dirMediaDir="/mnt/e/Engine_Room/Pretend_Media"
+      	  	dirMediaDir="/mnt/e/_Pretend_Media_for_NAS"
           	break
           	;;
         0)
@@ -2931,7 +3038,7 @@ _EOF_
 
 	echo ""
 	echo ""
-	echo "NAS Media Directory:  	$dirMediaDir"
+	echo "Media Directory:  	$dirMediaDir"
 	echo "-------------------------------------------------------------------------------"
 	echo ""
 	echo ""
@@ -3074,14 +3181,14 @@ create_folder_and_move() {
 
 
 ##########################################################################
-# POST-STEP03 - Copy generated commands to Media                         #
+# POST-STEP03 - Copy generated commands to Dropbox                       #
 ##########################################################################
 
 
 copy_commands_to_media() {
 
 	echo "*******************************************************************************"
-	echo "Starting Step 3 - Copy generated commands to Media" 
+	echo "Starting Step 3 - Copy generated commands to Dropbox" 
 	echo ""
 	echo ""
 
@@ -3092,8 +3199,8 @@ copy_commands_to_media() {
 	dirSourceCommands=$( echo $dirReadyForTranscoding | sed 's/\/04_ReadyForTranscoding/\/03_Outbox\/Commands/g' )
 
 	# Destination Directories
-	dirDestinationCommands="$dirMediaDir/Transcoding/Commands"
-	dirDestinationOverrides="$dirMediaDir/Transcoding/Overrides"
+	dirDestinationCommands="$dirDropboxLogsDir/Commands"
+	dirDestinationOverrides="$dirDropboxLogsDir/Overrides"
 	
 	cd $dirSourceCommands
 
@@ -3183,13 +3290,13 @@ copy_commands_to_media() {
 
 
 ##########################################################################
-# POST-STEP04 - Copy generated summary folders to Media                  #
+# POST-STEP04 - Copy generated summary folders to Dropbox                #
 ##########################################################################
 
 copy_summaries_to_media() {
 
 	echo "*******************************************************************************"
-	echo "Starting Step 4 - Copy generated summary folders to Media" 
+	echo "Starting Step 4 - Copy generated summary folders to Dropbox" 
 	echo ""
 	echo ""
 
@@ -3199,7 +3306,7 @@ copy_summaries_to_media() {
 	dirSourceSummaries=$( echo $dirReadyForTranscoding | sed 's/\/04_ReadyForTranscoding/\/03_Outbox\/Summaries/g' )
 	
 	# Destination Directory
-	dirDestinationSummaries="$dirMediaDir/Transcoding/Summaries"
+	dirDestinationSummaries="$dirDropboxLogsDir/Summaries"
 	
 	cd $dirSourceSummaries
 			
@@ -3244,13 +3351,13 @@ copy_summaries_to_media() {
 
 
 ##########################################################################
-# POST-STEP05 - Copy transcoded logs to NAS                               #
+# POST-STEP05 - Copy transcoded logs to Dropbox                          #
 ##########################################################################
 
 copy_transcoded_log_to_media() {
 
 	echo "*******************************************************************************"
-	echo "Starting Step 5 - Copy transcoded logs to NAS" 
+	echo "Starting Step 5 - Copy transcoded logs to Dropbox" 
 	echo ""
 	echo ""
 
@@ -3260,7 +3367,7 @@ copy_transcoded_log_to_media() {
 	dirSourceTranscodedLog="$dirTranscodedWorkDir"
 	
 	# Destination Directory
-	dirDestinationTranscodedLog="$dirMediaDir/Transcoding/Logs"
+	dirDestinationTranscodedLog="$dirDropboxLogsDir/Logs"
 	
 	cd $dirSourceTranscodedLog
 			
@@ -3351,13 +3458,13 @@ copy_transcoded_content_to_plex() {
 
 
 ##########################################################################
-# POST-STEP07 - Copy raw MKV content to Media                            #
+# POST-STEP07 - Copy raw MKV content to Media or Ext HDD                 #
 ##########################################################################
 
 copy_raw_content_to_media() {
 
 	echo "*******************************************************************************"
-	echo "Starting Step 7 - Copy raw MKV content to Media" 
+	echo "Starting Step 7 - Copy raw MKV content to Media or an Ext HDD" 
 	echo ""
 	echo ""
 
@@ -3371,7 +3478,7 @@ copy_raw_content_to_media() {
 	
 	cd $dirSourceRawMKVContent
 	
-	echo "About to begin copying raw MKVs to the Media folder on the NAS ..."
+	echo "About to begin copying raw MKVs to the Media folder on the NAS or ext HDD ..."
 	echo "Command:"
 	echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
 		
