@@ -1,7 +1,8 @@
 # Change Log #
 
 ## 0.30 ##
-_27 June 2020_
+_17 July 2020_
+- Change automation for the transcode logs, JSON Summaries, command/override files to store them on Dropbox instead of on a NAS mount point.
 
 
 ## 0.29 ##
