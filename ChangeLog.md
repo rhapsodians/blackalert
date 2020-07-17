@@ -1,5 +1,10 @@
 # Change Log #
 
+## 0.31 ##
+_18 July 2020_
+- WDL mount bug fixes
+
+
 ## 0.30 ##
 _17 July 2020_
 - Change automation for the transcode logs, JSON Summaries, command/override files to store them on Dropbox instead of on a NAS mount point.

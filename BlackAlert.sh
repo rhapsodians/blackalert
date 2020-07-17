@@ -2,7 +2,7 @@
 
 ###############################################################################
 # BlackAlert.sh                                                               #
-# Version 0.30                                                                #
+# Version 0.31                                                                #
 #                                                                             #
 # Copyright 2020 - Joe Hurley                                                 #
 #                                                                             #
@@ -22,7 +22,7 @@ DELAY=2
 
 echo "############################################################################################"
 echo "#                                                                                          #"
-echo "# BLACKALERT.SH (v0.30)                                                                    #"
+echo "# BLACKALERT.SH (v0.31)                                                                    #"
 echo "#                                                                                          #"
 echo "############################################################################################"
 
@@ -2789,7 +2789,7 @@ Please select one of the following:
 ===============================================================================
 
   1. /Volumes/4TB/Engine_Room-TEST/04_ReadyForTranscoding
-  2. /mnt/e/Engine_Room/04_ReadyForTranscoding
+  2. /mnt/e/Engine_Room-TEST/04_ReadyForTranscoding
   0. Quit
 	
 ===============================================================================
@@ -2805,7 +2805,7 @@ _EOF_
           	break
           	;;
       	2)
-      	  	dirReadyForTranscoding="/mnt/e/Engine_Room/04_ReadyForTranscoding"
+      	  	dirReadyForTranscoding="/mnt/e/Engine_Room-TEST/04_ReadyForTranscoding"
           	break
           	;;
         0)
@@ -2906,7 +2906,7 @@ Please select one of the following:
 ===============================================================================
 
   1. /Volumes/4TB/Engine_Room-TEST/Pretend_Plex
-  2. /mnt/e/Engine_Room/Pretend_Plex
+  2. /mnt/e/Engine_Room-TEST/Pretend_Plex
   0. Quit
 	
 ===============================================================================
@@ -2922,7 +2922,7 @@ _EOF_
           	break
           	;;
       	2)
-      	  	dirPlexDir="/mnt/e/Engine_Room/Pretend_Plex"
+      	  	dirPlexDir="/mnt/e/Engine_Room-TEST/Pretend_Plex"
           	break
           	;;
         0)
@@ -2957,7 +2957,7 @@ Please select one of the following:
 ===============================================================================
 
   1. /Volumes/4TB/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output
-  2. /mnt/e/_Pretend_Dropbox/Transcoding_Output
+  2. /mnt/e/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output
   0. Quit
 	
 ===============================================================================
@@ -2973,7 +2973,7 @@ _EOF_
           	break
           	;;
       	2)
-      	  	dirDropboxLogsDir="/mnt/e/_Pretend_Dropbox/Transcoding_Output"
+      	  	dirDropboxLogsDir="/mnt/e/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output"
           	break
           	;;
         0)
@@ -3007,7 +3007,7 @@ Please select one of the following:
 ===============================================================================
 
   1. /Volumes/4TB/Engine_Room-TEST/Pretend_Media
-  2. /mnt/e/Engine_Room/Pretend_Media
+  2. /mnt/e/Engine_Room-TEST/Pretend_Media_for_NAS
   0. Quit
 	
 ===============================================================================
@@ -3023,7 +3023,7 @@ _EOF_
           	break
           	;;
       	2)
-      	  	dirMediaDir="/mnt/e/_Pretend_Media_for_NAS"
+      	  	dirMediaDir="/mnt/e/Engine_Room-TEST/Pretend_Media_for_NAS"
           	break
           	;;
         0)
