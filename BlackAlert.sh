@@ -2667,11 +2667,11 @@ _EOF_
   		if [[ $REPLY =~ ^[0-2]$ ]]; then
     	case $REPLY in
      	1)
-           	dirDropboxLogsDir="/Users/joe/Dropbox"
+           	dirDropboxLogsDir="/Users/joe/Dropbox/Transcoding_Output"
           	break
           	;;
       	2)
-      	  	dirDropboxLogsDir="/mnt/c/Users/Joe/Dropbox"
+      	  	dirDropboxLogsDir="/mnt/c/Users/Joe/Dropbox/Transcoding_Output"
           	break
           	;;
         0)
