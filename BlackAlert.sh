@@ -2540,8 +2540,6 @@ Please select one of the following:
   1. /Volumes/D/05_Transcoded
   2. /Volumes/Media/Engine_Room/05_Transcoded
   3. /mnt/d/05_Transcoded
-  4. /mnt/e/Transcoded
-  5. /Volumes/E/Transcoded
   0. Quit
 	
 ===============================================================================
@@ -2564,14 +2562,6 @@ _EOF_
       	  	dirTranscodedWorkDir="/mnt/d/05_Transcoded"
           	break
           	;;
-        4)
-        	dirTranscodedWorkDir="/mnt/e/Transcoded"
-          	break
-          	;; 
-        5)
-        	dirTranscodedWorkDir="/Volumes/E/Transcoded"
-          	break
-          	;;  	
         0)
         	exit
         	;;	
