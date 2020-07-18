@@ -3464,7 +3464,7 @@ copy_raw_content_to_media() {
 	dirSourceRawMKVContent="$dirReadyForTranscoding"
 	
 	# Destination Directory
-	dirDestinationRawMKVContent="$dirMediaDir/_New"
+	dirDestinationRawMKVContent="$dirMediaDir"
 	
 	cd $dirSourceRawMKVContent
 	
