@@ -1,9 +1,15 @@
 # Change Log #
 
 ## 0.31 ##
-_18 July 2020_
-- WDL mount bug fixes
-
+_23 August 2020_
+- WSL mount bug fixes
+- added HDR post-processing
+- added `mediainfo` pre-req to the tools
+- fixed the "Season 0" folder where the zero was missing
+- Added in a test move (`mv`) location
+- Add pcm_s24le as a valid audio codec for mono - used for "It Happened One Night (1934)"
+- Post-processing: if the raw source target is the same "E" drive as ready-for-transcoding, swap the copy to a move.
+- 4K/HDR - check to ensure `--deinterlace` is not included due to the lack `.streams[0].field_order` not being set for 2160p content
 
 ## 0.30 ##
 _17 July 2020_
