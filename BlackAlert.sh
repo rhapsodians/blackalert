@@ -830,7 +830,7 @@ step4_ffprobe_summary() {
 step4_ffprobe_command() {
 
 	#ffprobe -v error -show_entries stream=index,format,codec_name,channel_layout,channels,codec_type:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
-	ffprobe -v error -show_entries stream=index,format,codec_name,profile,channel_layout,channels,codec_type,field_order:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
+	ffprobe -v error -show_entries stream=index,format,codec_name,profile,channel_layout,channels,codec_type,color_primaries,field_order:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
 
 }
 
@@ -1813,6 +1813,7 @@ other-transcode_commands() {
   		str05DefaultAudioTrackADChannelLayout=""
   		str05DefaultAudioTrackSubForcedFlagPresence=""
   		str05ProgressiveOrInterlace=""
+  		str05ColorPrimaries=""
   		str05SubtitleEnglishPresence=""
   		str05SubtitleSDHPresence=""
   		str05SubtitleCommentaryPresence=""
@@ -1858,6 +1859,7 @@ other-transcode_commands() {
   		str05DefaultAudioTrackSubForcedFlagPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .disposition.forced' | grep -w "1" | wc -l )
   		str05DefaultAudioTrackLanguage=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .tags.language' )
   		str05ProgressiveOrInterlace=$( echo "$str05FfprobeOutput" | jq -r '.streams[0].field_order' )
+  		str05ColorPrimaries=$( echo "$str05FfprobeOutput" | jq -r '.streams[0].color_primaries' )
 		str05SubtitleEnglishPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep -i "English" | wc -l )
 		str05SubtitleSDHPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep "SDH" | wc -l )
 		str05SubtitleCommentaryPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep -i "Commentary" | wc -l )
@@ -2020,6 +2022,25 @@ other-transcode_commands() {
 						arrHwTranscodeRbCommand+=()	
 					fi	
 					;;	
+				pcm_s24le)
+#					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
+					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
+					then
+						arrHwTranscodeRbCommand+=()
+					else
+						arrHwTranscodeRbCommand+=()	
+					fi	
+					;;	
+				aac)
+#					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
+					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
+					then
+						arrHwTranscodeRbCommand+=()
+					else
+						arrHwTranscodeRbCommand+=()	
+					fi	
+					;;	
+				
 					
 				*)
 					echo "*********************************************************************************"
@@ -2279,8 +2300,9 @@ other-transcode_commands() {
   		# The expectation for field_order is "progressive" but if any of the interlaced options are found,
   		# deinterlacing will be needed. "field_order" values include 'tt', 'bb', 'tb' and 'bt' for interlaced content
   		# or "progressive"
+  		# For 4K/HDR titles, the field_order is not set so the ColorPrimaries tag is used to identify 4K content
   		  	
-		if [ "$str05ProgressiveOrInterlace" != "progressive" ]
+		if [ "$str05ProgressiveOrInterlace" != "progressive" ] && [ "$str05ColorPrimaries" != "bt2020" ]
 		then
 			arrHwTranscodeRbCommand+=(--deinterlace)
 		fi
@@ -3041,6 +3063,150 @@ _EOF_
 
 
 ##########################################################################
+# POST-STEP00 - Add HDR info from source to transcoded                   #
+##########################################################################
+
+
+step0_post_ffprobe_command() {
+
+	ffprobe -v error -show_entries stream=index,format,codec_name,profile,channel_layout,color_primaries,channels,codec_type,field_order:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
+
+}
+
+
+add_HDR_to_transcoded() {
+
+	step0_checkForHDR=$(ffprobe -v error -show_entries stream=index,color_primaries -print_format json=compact=1 $1)
+
+	echo "***************************************************************************************"
+	echo "Starting Step 0 - Adding source HDR10 infomation to the transcoded file for 4K content" 
+	echo ""
+	echo ""
+
+	IFS=$'\n'
+	
+	dirReadyForTranscoding
+	
+	
+	cd $dirTranscodedWorkDir
+	
+	
+	
+			
+	for strP00FileName in `find . -type f -name "*.mkv" | sort` 
+		do
+		
+#		step0_checkForHDR=$(ffprobe -v error -show_entries stream=index,color_primaries -print_format json=compact=1 strP00FileName | )
+		
+		
+		
+		# Removes the leading ./ from the filename
+#		strP00FileName=${strP00FileName/\.\//}
+
+
+
+
+
+
+
+		# Pre-defined RGB & WP values for BT.2020
+		BT2020_xW=0.3127
+		BT2020_yW=0.3290
+		BT2020_xR=0.708
+		BT2020_yR=0.292
+		BT2020_xG=0.17
+		BT2020_yG=0.797
+		BT2020_xB=0.131
+		BT2020_yB=0.046
+
+		# Pre-defined RGB & WP values for P3-D65
+		P3D65_xW=0.3127
+		P3D65_yW=0.3290
+		P3D65_xR=0.680
+		P3D65_yR=0.320
+		P3D65_xG=0.265
+		P3D65_yG=0.690
+		P3D65_xB=0.150
+		P3D65_yB=0.060
+
+		# Extract values from source video
+		colourSpace=$(mediainfo --Inform="Video;%MasteringDisplay_ColorPrimaries%" "$1")
+		luminance=$(mediainfo --Inform="Video;%MasteringDisplay_Luminance%" "$1")
+		maxCLL=$(mediainfo --Inform="Video;%MaxCLL%" "$1")
+		maxFALL=$(mediainfo --Inform="Video;%MaxFALL%" "$1")
+
+		# Print results from MediaInfo
+		echo "Colour Space: $colourSpace"
+		echo "Luminance: $luminance"
+		echo "MaxCLL: $maxCLL"
+		echo "MaxFALL: $maxFALL"
+
+		# Change IFS to split strings on spaces
+		IFS_old="$IFS"
+		IFS=' '
+
+		# Extract max and min lumanances
+		read -ra luminances <<< "$luminance"
+		minLuminance=${luminances[1]}
+		maxLuminance=${luminances[4]}
+
+		# Extract MaxCLL
+		read -ra maxcll <<< "$maxCLL"
+		maxCLL_noUnit=${maxcll[0]}
+
+		# Extract MaxFALL
+		read -ra maxfall <<< "$maxFALL"
+		maxFALL_noUnit=${maxfall[0]}
+
+		# Reset IFS
+		IFS=$IFS_old
+
+		# Print extracted values
+		echo "Minimum luminance: $minLuminance"
+		echo "Maximum luminance: $maxLuminance"
+		echo "MaxCLL: $maxCLL_noUnit"
+		echo "MaxFALL: $maxFALL_noUnit"
+
+		# Edit second input based on values extracted from MediaInfo
+		if [ "$colourSpace" == "BT.2020" ]; then
+			mkvpropedit "$2" --edit track:v1 --set chromaticity-coordinates-red-x="$BT2020_xR" \
+			--set chromaticity-coordinates-red-y="$BT2020_yR" \
+			--set chromaticity-coordinates-green-x="$BT2020_xG" \
+			--set chromaticity-coordinates-green-y="$BT2020_yG" \
+			--set chromaticity-coordinates-blue-x="$BT2020_xB" \
+			--set chromaticity-coordinates-blue-y="$BT2020_yB" \
+			--set white-coordinates-x="$BT2020_xW" \
+			--set white-coordinates-y="$BT2020_yW" \
+			--set max-luminance="$maxLuminance" \
+			--set min-luminance="$minLuminance" \
+			--set max-content-light="$maxCLL_noUnit" \
+			--set max-frame-light="$maxFALL_noUnit"
+		elif [ "$colourSpace" == "Display P3" ]; then
+			mkvpropedit "$2" --edit track:v1 --set chromaticity-coordinates-red-x="$P3D65_xR" \
+			--set chromaticity-coordinates-red-y="$P3D65_yR" \
+			--set chromaticity-coordinates-green-x="$P3D65_xG" \
+			--set chromaticity-coordinates-green-y="$P3D65_yG" \
+			--set chromaticity-coordinates-blue-x="$P3D65_xB" \
+			--set chromaticity-coordinates-blue-y="$P3D65_yB" \
+			--set white-coordinates-x="$P3D65_xW" \
+			--set white-coordinates-y="$P3D65_yW" \
+			--set max-luminance="$maxLuminance" \
+			--set min-luminance="$minLuminance" \
+			--set max-content-light="$maxCLL_noUnit" \
+			--set max-frame-light="$maxFALL_noUnit"
+		else
+			echo "Unknown colour space: $colourSpace"
+		fi
+
+
+}
+
+
+
+
+
+
+##########################################################################
 # POST-STEP01 - Correctly title the transcoded audio titles              #
 ##########################################################################
 
@@ -3070,29 +3236,43 @@ add_titles_to_transcoded_audio() {
 #	for strP01MkvName in `find . -type f -name "*.mkv" | sort`
 #	do
 #		strP01MkvName=${strP01MkvName/\.\//}
+#		strP01AudioStreamCount=$( step1_post_ffprobe_command ${dirSourceTranscodedMkv}/${strP01MkvName} | jq -c '.streams[] | select(.codec_type=="audio" and .tags.title==null) | [.channels]' | wc -l )
+#		strP01IndexList=$( step1_post_ffprobe_command ${dirSourceTranscodedMkv}/${strP01MkvName} | jq -r '.streams[] | select(.codec_type=="audio" and .tags.title==null) | [.index]')
 #
-	#	We could start iterating of the above with a Bash for loop if our data does not contain spaces or newlines. 
-	#	But since titles contain spaces, we better base64 encode each item. 
-#
-#	sample='[{"name":"foo"},{"name":"bar"}]'
-#	for row in $(echo "${sample}" | jq -r '.[] | @base64'); do
-#	    _jq() {
-#	     echo ${row} | base64 --decode | jq -r ${1}
-#	    }
-#	
-#   	echo $(_jq '.name')
-#	done
-#
-#
-#		strP01AudioStreamCount=$( step1_post_ffprobe_command $strP01MkvName | jq -c '.streams[] | select(.codec_type=="audio")' | wc -l )
-#
-#		for ((i=1;i<=strP01AudioStreamCount;i++)); do
- #   		echo $i
+#		for strP01IndexNo in `echo $strP01IndexList`
+#		do
+#			((strP01IndexNo++))
+#			
+#			case $strP01IndexList in
+#				1) 
+#					strP01TranscodedAudioStreamTitle="Mono"
+#					;;
+#				2) 
+#					strP01TranscodedAudioStreamTitle="Stereo"
+#					;;
+#				3)	
+#					strP01TranscodedAudioStreamTitle="Stereo 2.1"
+#					;;	
+#				6) 
+#					strP01TranscodedAudioStreamTitle="Surround 5.1"
+#					;;
+#				7)
+#					strP01TranscodedAudioStreamTitle="Surround 6.1"
+#					;;	
+#				8) 
+#					strP01TranscodedAudioStreamTitle="Surround 7.1"
+#					;;	
+#			    *)
+#			    	strP01TranscodedAudioStreamTitle=""
+#					;;
+#			esac
+#			
+#			mkvpropedit $FILE --edit track:$strP01IndexNo --set name=${strP01TranscodedAudioStreamTitle}
+#			echo "Naming audio track ${strP01IndexNo}:  $strP01TranscodedAudioStreamTitle"
+#			
 #		done
-#
-#ffprobe -v error -show_entries stream=index,format,codec_name,profile,channel_layout,channels,codec_type,field_order:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 ./Frozen\ \(2013\).mkv | jq -r '.streams[] | select(.codec_type=="audio" and .index==1) | .index, .codec_name, .channels, .channel_layout, .disposition.title'
-#
-#
+		
+
 
 	echo " "
 	echo "Step 1 complete" 
@@ -3468,19 +3648,35 @@ copy_raw_content_to_media() {
 	
 	cd $dirSourceRawMKVContent
 	
-	echo "About to begin copying raw MKVs to the Media folder on the NAS or ext HDD ..."
-	echo "Command:"
-	echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
-		
-	if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/
+	if [[ $dirSourceRawMKVContent="/mnt/e/_MEDIA_FOR_NAS" ]]
 	then
-		echo "Copy successful"
-		rm -v $dirSourceRawMKVContent/*
+		echo "About to begin moving raw MKVs to the _MEDIA_FOR_NAS folder ..."
+		echo "Command:"
+		echo "mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
+		
+		if mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/
+		then
+			echo "Move successful"
+			rm -v $dirSourceRawMKVContent/*
+		else
+			echo "Move failure, exit status $?"
+			exit
+		fi		
+	
 	else
-		echo "Copy failure, exit status $?"
-		exit
-	fi		
-
+		echo "About to begin copying raw MKVs to the Media folder on the NAS or ext HDD ..."
+		echo "Command:"
+		echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
+		
+		if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/
+		then
+			echo "Copy successful"
+			rm -v $dirSourceRawMKVContent/*
+		else
+			echo "Copy failure, exit status $?"
+			exit
+		fi		
+	fi
 
 	echo " "
 	echo "Step 7 complete" 
@@ -3509,6 +3705,9 @@ post_runbook() {
 	strStartDateTime=$(date "+%Y%m%d-%H%M%S")
 	echo "Start time:   $strStartDateTime"
 	echo ""
+
+	# Step 0:  	Correctly add HDR info from source -> transcode
+#	add_HDR_to_transcoded
 
 	# Step 1:  	Correctly title the transcoded audio titles
 	add_titles_to_transcoded_audio
