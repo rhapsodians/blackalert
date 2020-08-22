@@ -342,7 +342,7 @@ setup_checks() {
   		strExit="True"
 	fi
 
-	for tool in ffprobe jq filebot mkvpropedit
+	for tool in ffprobe jq filebot mkvpropedit mediainfo
 	do
     	command -v $tool >/dev/null 2>&1 || { echo "Executable not in \$PATH: $tool" >&2; strExit="True"; }
 	done
@@ -2308,7 +2308,7 @@ other-transcode_commands() {
 		fi
 
 
-		if [ "$str05ProgressiveOrInterlace" != "progressive" ]
+		if [ "$str05ProgressiveOrInterlace" != "progressive" ] && [ "$str05ColorPrimaries" != "bt2020" ]
 		then
 			echo "  - ${str05RawName}    (with deinterlace included)"
 		else
@@ -3067,139 +3067,137 @@ _EOF_
 ##########################################################################
 
 
-step0_post_ffprobe_command() {
-
-	ffprobe -v error -show_entries stream=index,format,codec_name,profile,channel_layout,color_primaries,channels,codec_type,field_order:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
-
-}
-
 
 add_HDR_to_transcoded() {
-
-	step0_checkForHDR=$(ffprobe -v error -show_entries stream=index,color_primaries -print_format json=compact=1 $1)
-
-	echo "***************************************************************************************"
-	echo "Starting Step 0 - Adding source HDR10 infomation to the transcoded file for 4K content" 
-	echo ""
-	echo ""
-
+	
+	# Details below courtesy for Andy Sheimo and Martin Pickett
+	# Martin's bash script is here:
+	# https://gist.github.com/martinpickett/1bbb1675c86eef67fe42409ff7430f73
+	# I've made minor modifications to make it work within this function.
+	
+	
 	IFS=$'\n'
 	
-	dirReadyForTranscoding
-	
-	
 	cd $dirTranscodedWorkDir
-	
-	
-	
-			
+				
 	for strP00FileName in `find . -type f -name "*.mkv" | sort` 
 		do
-		
-#		step0_checkForHDR=$(ffprobe -v error -show_entries stream=index,color_primaries -print_format json=compact=1 strP00FileName | )
-		
-		
-		
-		# Removes the leading ./ from the filename
-#		strP00FileName=${strP00FileName/\.\//}
 
+		echo "***************************************************************************************"
+		echo "Starting Step 0 - Adding source HDR10 infomation to the transcoded file for 4K content" 
+		echo ""
+		echo ""
+			
+		# Removes the leading ./ from the filename	
+		strP00FileName=${strP00FileName/\.\//}
+				
+		strStep00RawSourceMKV="$dirReadyForTranscoding/$strP00FileName"			
+		strStep00TranscodedTargetMKV="$dirTranscodedWorkDir/$strP00FileName"
 
+		echo "strStep00RawSourceMKV:   $strStep00RawSourceMKV"
+		echo "strStep00TranscodedTargetMKV: $strStep00TranscodedTargetMKV"
 
+	
+		step0_checkForHDR=$(ffprobe -v error -show_entries stream=index,color_primaries -print_format json=compact=1 ${strStep00RawSourceMKV} | jq -r '.streams[0] | .color_primaries' )
+		echo "step0_checkForHDR:  $step0_checkForHDR"
+	
+		if [[ "$step0_checkForHDR" = "bt2020" ]]
+		then
 
+			# Pre-defined RGB & WP values for BT.2020
+			BT2020_xW=0.3127
+			BT2020_yW=0.3290
+			BT2020_xR=0.708
+			BT2020_yR=0.292
+			BT2020_xG=0.17
+			BT2020_yG=0.797
+			BT2020_xB=0.131
+			BT2020_yB=0.046
 
+			# Pre-defined RGB & WP values for P3-D65
+			P3D65_xW=0.3127
+			P3D65_yW=0.3290
+			P3D65_xR=0.680
+			P3D65_yR=0.320
+			P3D65_xG=0.265
+			P3D65_yG=0.690
+			P3D65_xB=0.150
+			P3D65_yB=0.060
 
+			# Extract values from source video
+			colourSpace=$(mediainfo --Inform="Video;%MasteringDisplay_ColorPrimaries%" "$strStep00RawSourceMKV")
+			luminance=$(mediainfo --Inform="Video;%MasteringDisplay_Luminance%" "$strStep00RawSourceMKV")
+			maxCLL=$(mediainfo --Inform="Video;%MaxCLL%" "$strStep00RawSourceMKV")
+			maxFALL=$(mediainfo --Inform="Video;%MaxFALL%" "$strStep00RawSourceMKV")
 
-		# Pre-defined RGB & WP values for BT.2020
-		BT2020_xW=0.3127
-		BT2020_yW=0.3290
-		BT2020_xR=0.708
-		BT2020_yR=0.292
-		BT2020_xG=0.17
-		BT2020_yG=0.797
-		BT2020_xB=0.131
-		BT2020_yB=0.046
+			# Print results from MediaInfo
+			echo "Colour Space: $colourSpace"
+			echo "Luminance: $luminance"
+			echo "MaxCLL: $maxCLL"
+			echo "MaxFALL: $maxFALL"
+	
+			# Change IFS to split strings on spaces
+			IFS_old="$IFS"
+			IFS=' '
 
-		# Pre-defined RGB & WP values for P3-D65
-		P3D65_xW=0.3127
-		P3D65_yW=0.3290
-		P3D65_xR=0.680
-		P3D65_yR=0.320
-		P3D65_xG=0.265
-		P3D65_yG=0.690
-		P3D65_xB=0.150
-		P3D65_yB=0.060
+			# Extract max and min lumanances
+			read -ra luminances <<< "$luminance"
+			minLuminance=${luminances[1]}
+			maxLuminance=${luminances[4]}
 
-		# Extract values from source video
-		colourSpace=$(mediainfo --Inform="Video;%MasteringDisplay_ColorPrimaries%" "$1")
-		luminance=$(mediainfo --Inform="Video;%MasteringDisplay_Luminance%" "$1")
-		maxCLL=$(mediainfo --Inform="Video;%MaxCLL%" "$1")
-		maxFALL=$(mediainfo --Inform="Video;%MaxFALL%" "$1")
+			# Extract MaxCLL
+			read -ra maxcll <<< "$maxCLL"
+			maxCLL_noUnit=${maxcll[0]}
 
-		# Print results from MediaInfo
-		echo "Colour Space: $colourSpace"
-		echo "Luminance: $luminance"
-		echo "MaxCLL: $maxCLL"
-		echo "MaxFALL: $maxFALL"
+			# Extract MaxFALL
+			read -ra maxfall <<< "$maxFALL"
+			maxFALL_noUnit=${maxfall[0]}
 
-		# Change IFS to split strings on spaces
-		IFS_old="$IFS"
-		IFS=' '
+			# Reset IFS
+			IFS=$IFS_old
 
-		# Extract max and min lumanances
-		read -ra luminances <<< "$luminance"
-		minLuminance=${luminances[1]}
-		maxLuminance=${luminances[4]}
-
-		# Extract MaxCLL
-		read -ra maxcll <<< "$maxCLL"
-		maxCLL_noUnit=${maxcll[0]}
-
-		# Extract MaxFALL
-		read -ra maxfall <<< "$maxFALL"
-		maxFALL_noUnit=${maxfall[0]}
-
-		# Reset IFS
-		IFS=$IFS_old
-
-		# Print extracted values
-		echo "Minimum luminance: $minLuminance"
-		echo "Maximum luminance: $maxLuminance"
-		echo "MaxCLL: $maxCLL_noUnit"
-		echo "MaxFALL: $maxFALL_noUnit"
-
-		# Edit second input based on values extracted from MediaInfo
-		if [ "$colourSpace" == "BT.2020" ]; then
-			mkvpropedit "$2" --edit track:v1 --set chromaticity-coordinates-red-x="$BT2020_xR" \
-			--set chromaticity-coordinates-red-y="$BT2020_yR" \
-			--set chromaticity-coordinates-green-x="$BT2020_xG" \
-			--set chromaticity-coordinates-green-y="$BT2020_yG" \
-			--set chromaticity-coordinates-blue-x="$BT2020_xB" \
-			--set chromaticity-coordinates-blue-y="$BT2020_yB" \
-			--set white-coordinates-x="$BT2020_xW" \
-			--set white-coordinates-y="$BT2020_yW" \
-			--set max-luminance="$maxLuminance" \
-			--set min-luminance="$minLuminance" \
-			--set max-content-light="$maxCLL_noUnit" \
-			--set max-frame-light="$maxFALL_noUnit"
-		elif [ "$colourSpace" == "Display P3" ]; then
-			mkvpropedit "$2" --edit track:v1 --set chromaticity-coordinates-red-x="$P3D65_xR" \
-			--set chromaticity-coordinates-red-y="$P3D65_yR" \
-			--set chromaticity-coordinates-green-x="$P3D65_xG" \
-			--set chromaticity-coordinates-green-y="$P3D65_yG" \
-			--set chromaticity-coordinates-blue-x="$P3D65_xB" \
-			--set chromaticity-coordinates-blue-y="$P3D65_yB" \
-			--set white-coordinates-x="$P3D65_xW" \
-			--set white-coordinates-y="$P3D65_yW" \
-			--set max-luminance="$maxLuminance" \
-			--set min-luminance="$minLuminance" \
-			--set max-content-light="$maxCLL_noUnit" \
-			--set max-frame-light="$maxFALL_noUnit"
-		else
-			echo "Unknown colour space: $colourSpace"
+			# Print extracted values
+			echo "Minimum luminance: $minLuminance"
+			echo "Maximum luminance: $maxLuminance"
+			echo "MaxCLL: $maxCLL_noUnit"
+			echo "MaxFALL: $maxFALL_noUnit"
+	
+			# Edit second input based on values extracted from MediaInfo
+			if [ "$colourSpace" == "BT.2020" ]; then
+				mkvpropedit "$strStep00TranscodedTargetMKV" --edit track:v1 --set chromaticity-coordinates-red-x="$BT2020_xR" \
+				--set chromaticity-coordinates-red-y="$BT2020_yR" \
+				--set chromaticity-coordinates-green-x="$BT2020_xG" \
+				--set chromaticity-coordinates-green-y="$BT2020_yG" \
+				--set chromaticity-coordinates-blue-x="$BT2020_xB" \
+				--set chromaticity-coordinates-blue-y="$BT2020_yB" \
+				--set white-coordinates-x="$BT2020_xW" \
+				--set white-coordinates-y="$BT2020_yW" \
+				--set max-luminance="$maxLuminance" \
+				--set min-luminance="$minLuminance" \
+				--set max-content-light="$maxCLL_noUnit" \
+				--set max-frame-light="$maxFALL_noUnit"
+			elif [ "$colourSpace" == "Display P3" ]; then
+				mkvpropedit "$strStep00TranscodedTargetMKV" --edit track:v1 --set chromaticity-coordinates-red-x="$P3D65_xR" \
+				--set chromaticity-coordinates-red-y="$P3D65_yR" \
+				--set chromaticity-coordinates-green-x="$P3D65_xG" \
+				--set chromaticity-coordinates-green-y="$P3D65_yG" \
+				--set chromaticity-coordinates-blue-x="$P3D65_xB" \
+				--set chromaticity-coordinates-blue-y="$P3D65_yB" \
+				--set white-coordinates-x="$P3D65_xW" \
+				--set white-coordinates-y="$P3D65_yW" \
+				--set max-luminance="$maxLuminance" \
+				--set min-luminance="$minLuminance" \
+				--set max-content-light="$maxCLL_noUnit" \
+				--set max-frame-light="$maxFALL_noUnit"
+			else
+				echo "Unknown colour space: $colourSpace"
+			fi
 		fi
-
-
+	done
+	
+		
 }
+
 
 
 
@@ -3312,7 +3310,11 @@ create_folder_and_move() {
 
 			# Determine the Season number
 			#strTVShowSeasonNo=$( echo "$strP02FileName" | sed 's/.*\ -\ S//g' | cut -c1-2 | sed 's/^0*//g' )
-			strTVShowSeasonNo=$( echo "$strP02FileName" | cut -d"-" -f2 | sed 's/.*\ S//g' | cut -c1-2 | sed 's/^0*//g' )
+			strTVShowSeasonNo=$( echo "$strP02FileName" | cut -d"-" -f2 | sed 's/.*\ S//g' | cut -c1-2 | sed 's/^0//g' )
+			
+			echo "strP02FileName:  $strP02FileName"
+			echo "strTVShowSeasonNo:  $strTVShowSeasonNo"
+			sleep 3
 
 			if [ ! -d ${dirTranscodedWorkDir}/${strTVShowName} ]
 			then
@@ -3648,7 +3650,7 @@ copy_raw_content_to_media() {
 	
 	cd $dirSourceRawMKVContent
 	
-	if [[ $dirSourceRawMKVContent="/mnt/e/_MEDIA_FOR_NAS" ]]
+	if [[ $dirSourceRawMKVContent="/mnt/e/_MEDIA_FOR_NAS" ]] || [[ $dirSourceRawMKVContent="/Volumes/4TB/Engine_Room-TEST/Pretend_Media" ]]
 	then
 		echo "About to begin moving raw MKVs to the _MEDIA_FOR_NAS folder ..."
 		echo "Command:"
@@ -3657,7 +3659,6 @@ copy_raw_content_to_media() {
 		if mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/
 		then
 			echo "Move successful"
-			rm -v $dirSourceRawMKVContent/*
 		else
 			echo "Move failure, exit status $?"
 			exit
@@ -3707,7 +3708,7 @@ post_runbook() {
 	echo ""
 
 	# Step 0:  	Correctly add HDR info from source -> transcode
-#	add_HDR_to_transcoded
+	add_HDR_to_transcoded
 
 	# Step 1:  	Correctly title the transcoded audio titles
 	add_titles_to_transcoded_audio
