@@ -1817,6 +1817,7 @@ other-transcode_commands() {
   		str05SubtitleEnglishPresence=""
   		str05SubtitleSDHPresence=""
   		str05SubtitleCommentaryPresence=""
+		str05SubtitleForcedPresence=""  		
   		str05OverrideFile=""
   		str05EAC3SurroundAACStereoMono=""
   		str05EnableDTSPassthrough=""
@@ -1863,6 +1864,7 @@ other-transcode_commands() {
 		str05SubtitleEnglishPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep -i "English" | wc -l )
 		str05SubtitleSDHPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep "SDH" | wc -l )
 		str05SubtitleCommentaryPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep -i "Commentary" | wc -l )
+		str05SubtitleForcedPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep -i "Forced" | wc -l )
 
 
 		# Assumptions 
@@ -2229,12 +2231,20 @@ other-transcode_commands() {
 		# [2019.09.25] - removed from defaults as testing has shown
 		# that there's a 30% drop-off in fps when crops > 55 pixels are applied. As a result, full frame will be the DEFAULT
 		# to retain max fps speed but also to prevent subtitle positional issues with ffmpeg.
+		#
+		# If the default forced subtitle burn-in is switched off ($str05DisableForcedSubtitleAutoBurnIn" != "true"), then the forced
+		# subtitle should also be embedded along with English, SDC and Commentary.
 		
 		if [ "$str05DisableForcedSubtitleAutoBurnIn" != "true" ]
 		then
 			if [ "$str05DefaultAudioTrackSubForcedFlagPresence" -eq "1" ]
 			then
 				arrHwTranscodeRbCommand+=(--burn-subtitle auto)
+			else
+				if [ "$str05SubtitleForcedPresence" -eq "1" ]
+				then
+					arrHwTranscodeRbCommand+=(--add-subtitle \"Forced\")
+				fi
 			fi
 		fi	
 
@@ -2252,7 +2262,7 @@ other-transcode_commands() {
 		#		
 		# But, in the case of non-English default audio streams, if there is no forced flag, then the full compliment of possible subtitles 
 		# ("English", "SDH", "Commentary") can also be added so that an English PGS is present to be manually set when watching the 
-		# transcoded movie.
+		# transcoded movie.		
 		
 				
 		case $str05DefaultAudioTrackLanguage in
