@@ -1934,6 +1934,9 @@ other-transcode_commands() {
    		# triggered by `-hwaccel auto`. By using CUVID, all decoding remains within the GPU reducing CPU load plus
    		# allows VC-1 decode/encode to run at the same speed as AVC, thus bringing a 115-120fps average up to
    		# approx. 130-135fps.
+   		#
+   		# Removed cuvid on 24-Aug-2020 as it causes issues with 4K transcoding - Coco had 34 sec of black screen at the start 
+   		# of the movie and Inception had its 12Mbit/sec bitrate reduced to approx 800 kbit/sec.
    		 		
 
 		if [[ "$str05UseVideoToolBox" = "true" ]]
@@ -1963,7 +1966,7 @@ other-transcode_commands() {
 				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
 			else
 				# arrHwTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
-				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq --cuvid )
+				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
 			fi			
 		fi
 
@@ -3104,97 +3107,54 @@ add_HDR_to_transcoded() {
 		if [[ "$step0_checkForHDR" = "bt2020" ]]
 		then
 
-			# Pre-defined RGB & WP values for BT.2020
-			BT2020_xW=0.3127
-			BT2020_yW=0.3290
-			BT2020_xR=0.708
-			BT2020_yR=0.292
-			BT2020_xG=0.17
-			BT2020_yG=0.797
-			BT2020_xB=0.131
-			BT2020_yB=0.046
-
-			# Pre-defined RGB & WP values for P3-D65
-			P3D65_xW=0.3127
-			P3D65_yW=0.3290
-			P3D65_xR=0.680
-			P3D65_yR=0.320
-			P3D65_xG=0.265
-			P3D65_yG=0.690
-			P3D65_xB=0.150
-			P3D65_yB=0.060
-
 			# Extract values from source video
-			colourSpace=$(mediainfo --Inform="Video;%MasteringDisplay_ColorPrimaries%" "$strStep00RawSourceMKV")
-			luminance=$(mediainfo --Inform="Video;%MasteringDisplay_Luminance%" "$strStep00RawSourceMKV")
-			maxCLL=$(mediainfo --Inform="Video;%MaxCLL%" "$strStep00RawSourceMKV")
-			maxFALL=$(mediainfo --Inform="Video;%MaxFALL%" "$strStep00RawSourceMKV")
+			ffprobe_output=$(ffprobe -hide_banner -loglevel warning -select_streams v -print_format json -show_frames -read_intervals "%+#1" -show_entries "frame=side_data_list" "$strStep00RawSourceMKV" | jq '.["frames"] | .[] | .["side_data_list"]')
 
-			# Print results from MediaInfo
-			echo "Colour Space: $colourSpace"
-			echo "Luminance: $luminance"
-			echo "MaxCLL: $maxCLL"
-			echo "MaxFALL: $maxFALL"
-	
-			# Change IFS to split strings on spaces
-			IFS_old="$IFS"
-			IFS=' '
+			# Storing values
+			Wx=$(echo $ffprobe_output | jq -r '.[0] | .["white_point_x"]' | awk '{print "scale=5; " $0}' | bc | awk '{printf "%f", $0}')
+			Wy=$(echo $ffprobe_output | jq -r '.[0] | .["white_point_y"]' | awk '{print "scale=5; " $0}' | bc | awk '{printf "%f", $0}')
+			Rx=$(echo $ffprobe_output | jq -r '.[0] | .["red_x"]' | awk '{print "scale=5; " $0}' | bc | awk '{printf "%f", $0}')
+			Ry=$(echo $ffprobe_output | jq -r '.[0] | .["red_y"]' | awk '{print "scale=5; " $0}' | bc | awk '{printf "%f", $0}')
+			Gx=$(echo $ffprobe_output | jq -r '.[0] | .["green_x"]' | awk '{print "scale=5; " $0}' | bc | awk '{printf "%f", $0}')
+			Gy=$(echo $ffprobe_output | jq -r '.[0] | .["green_y"]' | awk '{print "scale=5; " $0}' | bc | awk '{printf "%f", $0}')
+			Bx=$(echo $ffprobe_output | jq -r '.[0] | .["blue_x"]' | awk '{print "scale=5; " $0}' | bc | awk '{printf "%f", $0}')
+			By=$(echo $ffprobe_output | jq -r '.[0] | .["blue_y"]' | awk '{print "scale=5; " $0}' | bc | awk '{printf "%f", $0}')
+			MaxLum=$(echo $ffprobe_output | jq -r '.[0] | .["max_luminance"]' | bc)
+			MinLum=$(echo $ffprobe_output | jq -r '.[0] | .["min_luminance"]' | bc)
+			MaxCLL=$(echo $ffprobe_output | jq -r '.[1] | .["max_content"]' | bc)
+			MaxFALL=$(echo $ffprobe_output | jq -r '.[1] | .["max_average"]' | bc)
 
-			# Extract max and min lumanances
-			read -ra luminances <<< "$luminance"
-			minLuminance=${luminances[1]}
-			maxLuminance=${luminances[4]}
+			echo "Extracted HDR10 Values are:"
+			echo "White point x = $Wx"
+			echo "White point y = $Wy"
+			echo "Red x = $Rx"
+			echo "Red y = $Ry"
+			echo "Green x = $Gx"
+			echo "Green y = $Gy"
+			echo "Blue x = $Bx"
+			echo "Blue y = $By"
+			echo "Max Luminance = $MaxLum"
+			echo "Min Luminance = $MinLum"
+			echo "MaxCLL = $MaxCLL"
+			echo "MaxFALL = $MaxFALL"
 
-			# Extract MaxCLL
-			read -ra maxcll <<< "$maxCLL"
-			maxCLL_noUnit=${maxcll[0]}
-
-			# Extract MaxFALL
-			read -ra maxfall <<< "$maxFALL"
-			maxFALL_noUnit=${maxfall[0]}
-
-			# Reset IFS
-			IFS=$IFS_old
-
-			# Print extracted values
-			echo "Minimum luminance: $minLuminance"
-			echo "Maximum luminance: $maxLuminance"
-			echo "MaxCLL: $maxCLL_noUnit"
-			echo "MaxFALL: $maxFALL_noUnit"
-	
-			# Edit second input based on values extracted from MediaInfo
-			if [ "$colourSpace" == "BT.2020" ]; then
-				mkvpropedit "$strStep00TranscodedTargetMKV" --edit track:v1 --set chromaticity-coordinates-red-x="$BT2020_xR" \
-				--set chromaticity-coordinates-red-y="$BT2020_yR" \
-				--set chromaticity-coordinates-green-x="$BT2020_xG" \
-				--set chromaticity-coordinates-green-y="$BT2020_yG" \
-				--set chromaticity-coordinates-blue-x="$BT2020_xB" \
-				--set chromaticity-coordinates-blue-y="$BT2020_yB" \
-				--set white-coordinates-x="$BT2020_xW" \
-				--set white-coordinates-y="$BT2020_yW" \
-				--set max-luminance="$maxLuminance" \
-				--set min-luminance="$minLuminance" \
-				--set max-content-light="$maxCLL_noUnit" \
-				--set max-frame-light="$maxFALL_noUnit"
-			elif [ "$colourSpace" == "Display P3" ]; then
-				mkvpropedit "$strStep00TranscodedTargetMKV" --edit track:v1 --set chromaticity-coordinates-red-x="$P3D65_xR" \
-				--set chromaticity-coordinates-red-y="$P3D65_yR" \
-				--set chromaticity-coordinates-green-x="$P3D65_xG" \
-				--set chromaticity-coordinates-green-y="$P3D65_yG" \
-				--set chromaticity-coordinates-blue-x="$P3D65_xB" \
-				--set chromaticity-coordinates-blue-y="$P3D65_yB" \
-				--set white-coordinates-x="$P3D65_xW" \
-				--set white-coordinates-y="$P3D65_yW" \
-				--set max-luminance="$maxLuminance" \
-				--set min-luminance="$minLuminance" \
-				--set max-content-light="$maxCLL_noUnit" \
-				--set max-frame-light="$maxFALL_noUnit"
-			else
-				echo "Unknown colour space: $colourSpace"
+			if [ $# -eq 2 ]; then 
+				mkvpropedit "$strStep00TranscodedTargetMKV" --edit track:v1 \
+				--set white-coordinates-x="$Wx" \
+				--set white-coordinates-y="$Wy" \
+				--set chromaticity-coordinates-red-x="$Rx" \
+				--set chromaticity-coordinates-red-y="$Ry" \
+				--set chromaticity-coordinates-green-x="$Gx" \
+				--set chromaticity-coordinates-green-y="$Gy" \
+				--set chromaticity-coordinates-blue-x="$Bx" \
+				--set chromaticity-coordinates-blue-y="$By" \
+				--set max-luminance="$MaxLum" \
+				--set min-luminance="$MinLum" \
+				--set max-content-light="$MaxCLL" \
+				--set max-frame-light="$MaxFALL"
 			fi
 		fi
 	done
-	
 		
 }
 
