@@ -4,7 +4,6 @@
 _23 August 2020_
 - WSL mount bug fixes
 - added HDR post-processing
-- added `mediainfo` pre-req to the tools
 - fixed the "Season 0" folder where the zero was missing
 - Added in a test move (`mv`) location
 - Add pcm_s24le as a valid audio codec for mono - used for "It Happened One Night (1934)"

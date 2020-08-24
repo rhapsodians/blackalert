@@ -342,7 +342,7 @@ setup_checks() {
   		strExit="True"
 	fi
 
-	for tool in ffprobe jq filebot mkvpropedit mediainfo
+	for tool in ffprobe jq filebot mkvpropedit
 	do
     	command -v $tool >/dev/null 2>&1 || { echo "Executable not in \$PATH: $tool" >&2; strExit="True"; }
 	done
