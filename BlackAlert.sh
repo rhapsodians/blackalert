@@ -2,7 +2,7 @@
 
 ###############################################################################
 # BlackAlert.sh                                                               #
-# Version 0.30                                                                #
+# Version 0.31                                                                #
 #                                                                             #
 # Copyright 2020 - Joe Hurley                                                 #
 #                                                                             #
@@ -22,7 +22,7 @@ DELAY=2
 
 echo "############################################################################################"
 echo "#                                                                                          #"
-echo "# BLACKALERT.SH (v0.30)                                                                    #"
+echo "# BLACKALERT.SH (v0.31)                                                                    #"
 echo "#                                                                                          #"
 echo "############################################################################################"
 
@@ -830,7 +830,7 @@ step4_ffprobe_summary() {
 step4_ffprobe_command() {
 
 	#ffprobe -v error -show_entries stream=index,format,codec_name,channel_layout,channels,codec_type:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
-	ffprobe -v error -show_entries stream=index,format,codec_name,profile,channel_layout,channels,codec_type,field_order:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
+	ffprobe -v error -show_entries stream=index,format,codec_name,profile,channel_layout,channels,codec_type,color_primaries,field_order:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
 
 }
 
@@ -1813,9 +1813,11 @@ other-transcode_commands() {
   		str05DefaultAudioTrackADChannelLayout=""
   		str05DefaultAudioTrackSubForcedFlagPresence=""
   		str05ProgressiveOrInterlace=""
+  		str05ColorPrimaries=""
   		str05SubtitleEnglishPresence=""
   		str05SubtitleSDHPresence=""
   		str05SubtitleCommentaryPresence=""
+		str05SubtitleForcedPresence=""  		
   		str05OverrideFile=""
   		str05EAC3SurroundAACStereoMono=""
   		str05EnableDTSPassthrough=""
@@ -1858,9 +1860,11 @@ other-transcode_commands() {
   		str05DefaultAudioTrackSubForcedFlagPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .disposition.forced' | grep -w "1" | wc -l )
   		str05DefaultAudioTrackLanguage=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .tags.language' )
   		str05ProgressiveOrInterlace=$( echo "$str05FfprobeOutput" | jq -r '.streams[0].field_order' )
+  		str05ColorPrimaries=$( echo "$str05FfprobeOutput" | jq -r '.streams[0].color_primaries' )
 		str05SubtitleEnglishPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep -i "English" | wc -l )
 		str05SubtitleSDHPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep "SDH" | wc -l )
 		str05SubtitleCommentaryPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep -i "Commentary" | wc -l )
+		str05SubtitleForcedPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep -i "Forced" | wc -l )
 
 
 		# Assumptions 
@@ -1932,6 +1936,9 @@ other-transcode_commands() {
    		# triggered by `-hwaccel auto`. By using CUVID, all decoding remains within the GPU reducing CPU load plus
    		# allows VC-1 decode/encode to run at the same speed as AVC, thus bringing a 115-120fps average up to
    		# approx. 130-135fps.
+   		#
+   		# Removed cuvid on 24-Aug-2020 as it causes issues with 4K transcoding - Coco had 34 sec of black screen at the start 
+   		# of the movie and Inception had its 12Mbit/sec bitrate reduced to approx 800 kbit/sec.
    		 		
 
 		if [[ "$str05UseVideoToolBox" = "true" ]]
@@ -1961,7 +1968,7 @@ other-transcode_commands() {
 				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
 			else
 				# arrHwTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
-				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq --cuvid )
+				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
 			fi			
 		fi
 
@@ -2020,6 +2027,25 @@ other-transcode_commands() {
 						arrHwTranscodeRbCommand+=()	
 					fi	
 					;;	
+				pcm_s24le)
+#					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
+					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
+					then
+						arrHwTranscodeRbCommand+=()
+					else
+						arrHwTranscodeRbCommand+=()	
+					fi	
+					;;	
+				aac)
+#					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
+					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
+					then
+						arrHwTranscodeRbCommand+=()
+					else
+						arrHwTranscodeRbCommand+=()	
+					fi	
+					;;	
+				
 					
 				*)
 					echo "*********************************************************************************"
@@ -2205,6 +2231,9 @@ other-transcode_commands() {
 		# [2019.09.25] - removed from defaults as testing has shown
 		# that there's a 30% drop-off in fps when crops > 55 pixels are applied. As a result, full frame will be the DEFAULT
 		# to retain max fps speed but also to prevent subtitle positional issues with ffmpeg.
+		#
+		# If the default forced subtitle burn-in is switched off ($str05DisableForcedSubtitleAutoBurnIn" != "true"), then the forced
+		# subtitle should also be embedded along with English, SDC and Commentary.
 		
 		if [ "$str05DisableForcedSubtitleAutoBurnIn" != "true" ]
 		then
@@ -2212,6 +2241,11 @@ other-transcode_commands() {
 			then
 				arrHwTranscodeRbCommand+=(--burn-subtitle auto)
 			fi
+		else
+				if [ "$str05SubtitleForcedPresence" -eq "1" ]
+				then
+					arrHwTranscodeRbCommand+=(--add-subtitle \"Forced\")
+				fi
 		fi	
 
 
@@ -2228,7 +2262,7 @@ other-transcode_commands() {
 		#		
 		# But, in the case of non-English default audio streams, if there is no forced flag, then the full compliment of possible subtitles 
 		# ("English", "SDH", "Commentary") can also be added so that an English PGS is present to be manually set when watching the 
-		# transcoded movie.
+		# transcoded movie.		
 		
 				
 		case $str05DefaultAudioTrackLanguage in
@@ -2279,14 +2313,15 @@ other-transcode_commands() {
   		# The expectation for field_order is "progressive" but if any of the interlaced options are found,
   		# deinterlacing will be needed. "field_order" values include 'tt', 'bb', 'tb' and 'bt' for interlaced content
   		# or "progressive"
+  		# For 4K/HDR titles, the field_order is not set so the ColorPrimaries tag is used to identify 4K content
   		  	
-		if [ "$str05ProgressiveOrInterlace" != "progressive" ]
+		if [ "$str05ProgressiveOrInterlace" != "progressive" ] && [ "$str05ColorPrimaries" != "bt2020" ]
 		then
 			arrHwTranscodeRbCommand+=(--deinterlace)
 		fi
 
 
-		if [ "$str05ProgressiveOrInterlace" != "progressive" ]
+		if [ "$str05ProgressiveOrInterlace" != "progressive" ] && [ "$str05ColorPrimaries" != "bt2020" ]
 		then
 			echo "  - ${str05RawName}    (with deinterlace included)"
 		else
@@ -2540,8 +2575,6 @@ Please select one of the following:
   1. /Volumes/D/05_Transcoded
   2. /Volumes/Media/Engine_Room/05_Transcoded
   3. /mnt/d/05_Transcoded
-  4. /mnt/e/Transcoded
-  5. /Volumes/E/Transcoded
   0. Quit
 	
 ===============================================================================
@@ -2564,14 +2597,6 @@ _EOF_
       	  	dirTranscodedWorkDir="/mnt/d/05_Transcoded"
           	break
           	;;
-        4)
-        	dirTranscodedWorkDir="/mnt/e/Transcoded"
-          	break
-          	;; 
-        5)
-        	dirTranscodedWorkDir="/Volumes/E/Transcoded"
-          	break
-          	;;  	
         0)
         	exit
         	;;	
@@ -2677,11 +2702,11 @@ _EOF_
   		if [[ $REPLY =~ ^[0-2]$ ]]; then
     	case $REPLY in
      	1)
-           	dirDropboxLogsDir="/Users/joe/Dropbox"
+           	dirDropboxLogsDir="/Users/joe/Dropbox/Transcoding_Output"
           	break
           	;;
       	2)
-      	  	dirDropboxLogsDir="/mnt/c/Users/Joe/Dropbox"
+      	  	dirDropboxLogsDir="/mnt/c/Users/Joe/Dropbox/Transcoding_Output"
           	break
           	;;
         0)
@@ -2717,15 +2742,16 @@ Please select one of the following:
   2. /Volumes/4TB/_MEDIA_FOR_NAS
   3. /mnt/m
   4. /mnt/e/_MEDIA_FOR_NAS
+  5. ARCHIVE Copies
   0. Quit
 	
 ===============================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-4] > "
+	  read -p "Enter selection [0-5] > "
 
-  		if [[ $REPLY =~ ^[0-4]$ ]]; then
+  		if [[ $REPLY =~ ^[0-5]$ ]]; then
     	case $REPLY in
      	1)
            	dirMediaDir="/Volumes/Media/_New"
@@ -2743,6 +2769,10 @@ _EOF_
         	dirMediaDir="/mnt/e/_MEDIA_FOR_NAS"
           	break
           	;; 	
+        5) 
+        	dirMediaDir="ARCHIVE"
+        	break
+        	;;  	
         0)
         	exit
         	;;	
@@ -2789,7 +2819,7 @@ Please select one of the following:
 ===============================================================================
 
   1. /Volumes/4TB/Engine_Room-TEST/04_ReadyForTranscoding
-  2. /mnt/e/Engine_Room/04_ReadyForTranscoding
+  2. /mnt/e/Engine_Room-TEST/04_ReadyForTranscoding
   0. Quit
 	
 ===============================================================================
@@ -2805,7 +2835,7 @@ _EOF_
           	break
           	;;
       	2)
-      	  	dirReadyForTranscoding="/mnt/e/Engine_Room/04_ReadyForTranscoding"
+      	  	dirReadyForTranscoding="/mnt/e/Engine_Room-TEST/04_ReadyForTranscoding"
           	break
           	;;
         0)
@@ -2906,7 +2936,7 @@ Please select one of the following:
 ===============================================================================
 
   1. /Volumes/4TB/Engine_Room-TEST/Pretend_Plex
-  2. /mnt/e/Engine_Room/Pretend_Plex
+  2. /mnt/e/Engine_Room-TEST/Pretend_Plex
   0. Quit
 	
 ===============================================================================
@@ -2922,7 +2952,7 @@ _EOF_
           	break
           	;;
       	2)
-      	  	dirPlexDir="/mnt/e/Engine_Room/Pretend_Plex"
+      	  	dirPlexDir="/mnt/e/Engine_Room-TEST/Pretend_Plex"
           	break
           	;;
         0)
@@ -2957,7 +2987,7 @@ Please select one of the following:
 ===============================================================================
 
   1. /Volumes/4TB/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output
-  2. /mnt/e/_Pretend_Dropbox/Transcoding_Output
+  2. /mnt/e/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output
   0. Quit
 	
 ===============================================================================
@@ -2973,7 +3003,7 @@ _EOF_
           	break
           	;;
       	2)
-      	  	dirDropboxLogsDir="/mnt/e/_Pretend_Dropbox/Transcoding_Output"
+      	  	dirDropboxLogsDir="/mnt/e/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output"
           	break
           	;;
         0)
@@ -3007,25 +3037,34 @@ Please select one of the following:
 ===============================================================================
 
   1. /Volumes/4TB/Engine_Room-TEST/Pretend_Media
-  2. /mnt/e/Engine_Room/Pretend_Media
+  2. /mnt/e/Engine_Room-TEST/Pretend_Media_for_NAS
+  3. ARCHIVE Copies
   0. Quit
 	
 ===============================================================================
 
 _EOF_
 
-  	read -p "Enter selection [0-2] > "
+  	read -p "Enter selection [0-4] > "
 
-  	if [[ $REPLY =~ ^[0-2]$ ]]; then
+  	if [[ $REPLY =~ ^[0-4]$ ]]; then
     	case $REPLY in
      	1)
            	dirMediaDir="/Volumes/4TB/Engine_Room-TEST/Pretend_Media"
           	break
           	;;
       	2)
-      	  	dirMediaDir="/mnt/e/_Pretend_Media_for_NAS"
+      	  	dirMediaDir="/mnt/e/Engine_Room-TEST/Pretend_Media_for_NAS"
           	break
           	;;
+        3)
+        	dirMediaDir="Pretend_ARCHIVE_Mac"
+        	break
+        	;;  	
+        4)
+         	dirMediaDir="Pretend_ARCHIVE_Win"
+        	break
+        	;;         	
         0)
         	exit
         	;;	
@@ -3045,6 +3084,100 @@ _EOF_
 	echo ""
 
 }
+
+
+
+
+
+##########################################################################
+# POST-STEP00 - Add HDR info from source to transcoded                   #
+##########################################################################
+
+
+
+add_HDR_to_transcoded() {
+	
+	# Details below courtesy for Andy Sheimo and Martin Pickett
+	# Martin's bash script is here:
+	# https://gist.github.com/martinpickett/1bbb1675c86eef67fe42409ff7430f73
+	# I've made minor modifications to make it work within this function.
+	
+	
+	IFS=$'\n'
+	
+	cd $dirTranscodedWorkDir
+				
+	for strP00FileName in `find . -type f -name "*.mkv" | sort` 
+		do
+
+		echo "***************************************************************************************"
+		echo "Starting Step 0 - Adding source HDR10 infomation to the transcoded file for 4K content" 
+		echo ""
+		echo ""
+			
+		# Removes the leading ./ from the filename	
+		strP00FileName=${strP00FileName/\.\//}
+				
+		strStep00RawSourceMKV="$dirReadyForTranscoding/$strP00FileName"			
+		strStep00TranscodedTargetMKV="$dirTranscodedWorkDir/$strP00FileName"
+	
+		step0_checkForHDR=$(ffprobe -v error -show_entries stream=index,color_primaries -print_format json=compact=1 ${strStep00RawSourceMKV} | jq -r '.streams[0] | .color_primaries' )
+	
+		if [[ "$step0_checkForHDR" = "bt2020" ]]
+		then
+
+			# Extract values from source video
+			ffprobe_output=$(ffprobe -hide_banner -loglevel warning -select_streams v -print_format json -show_frames -read_intervals "%+#1" -show_entries "frame=side_data_list" "$strStep00RawSourceMKV" | jq '.["frames"] | .[] | .["side_data_list"]')
+
+			# Storing values
+			Wx=$(echo $ffprobe_output | jq -r '.[0] | .["white_point_x"]' | awk '{print "scale=5; " $0}' | bc | awk '{printf "%f", $0}')
+			Wy=$(echo $ffprobe_output | jq -r '.[0] | .["white_point_y"]' | awk '{print "scale=5; " $0}' | bc | awk '{printf "%f", $0}')
+			Rx=$(echo $ffprobe_output | jq -r '.[0] | .["red_x"]' | awk '{print "scale=5; " $0}' | bc | awk '{printf "%f", $0}')
+			Ry=$(echo $ffprobe_output | jq -r '.[0] | .["red_y"]' | awk '{print "scale=5; " $0}' | bc | awk '{printf "%f", $0}')
+			Gx=$(echo $ffprobe_output | jq -r '.[0] | .["green_x"]' | awk '{print "scale=5; " $0}' | bc | awk '{printf "%f", $0}')
+			Gy=$(echo $ffprobe_output | jq -r '.[0] | .["green_y"]' | awk '{print "scale=5; " $0}' | bc | awk '{printf "%f", $0}')
+			Bx=$(echo $ffprobe_output | jq -r '.[0] | .["blue_x"]' | awk '{print "scale=5; " $0}' | bc | awk '{printf "%f", $0}')
+			By=$(echo $ffprobe_output | jq -r '.[0] | .["blue_y"]' | awk '{print "scale=5; " $0}' | bc | awk '{printf "%f", $0}')
+			MaxLum=$(echo $ffprobe_output | jq -r '.[0] | .["max_luminance"]' | bc)
+			MinLum=$(echo $ffprobe_output | jq -r '.[0] | .["min_luminance"]' | bc)
+			MaxCLL=$(echo $ffprobe_output | jq -r '.[1] | .["max_content"]' | bc)
+			MaxFALL=$(echo $ffprobe_output | jq -r '.[1] | .["max_average"]' | bc)
+
+			echo "Extracted HDR10 Values are:"
+			echo "White point x = $Wx"
+			echo "White point y = $Wy"
+			echo "Red x = $Rx"
+			echo "Red y = $Ry"
+			echo "Green x = $Gx"
+			echo "Green y = $Gy"
+			echo "Blue x = $Bx"
+			echo "Blue y = $By"
+			echo "Max Luminance = $MaxLum"
+			echo "Min Luminance = $MinLum"
+			echo "MaxCLL = $MaxCLL"
+			echo "MaxFALL = $MaxFALL"
+
+			if [ $# -eq 2 ]; then 
+				mkvpropedit "$strStep00TranscodedTargetMKV" --edit track:v1 \
+				--set white-coordinates-x="$Wx" \
+				--set white-coordinates-y="$Wy" \
+				--set chromaticity-coordinates-red-x="$Rx" \
+				--set chromaticity-coordinates-red-y="$Ry" \
+				--set chromaticity-coordinates-green-x="$Gx" \
+				--set chromaticity-coordinates-green-y="$Gy" \
+				--set chromaticity-coordinates-blue-x="$Bx" \
+				--set chromaticity-coordinates-blue-y="$By" \
+				--set max-luminance="$MaxLum" \
+				--set min-luminance="$MinLum" \
+				--set max-content-light="$MaxCLL" \
+				--set max-frame-light="$MaxFALL"
+			fi
+		fi
+	done
+		
+}
+
+
 
 
 
@@ -3080,29 +3213,43 @@ add_titles_to_transcoded_audio() {
 #	for strP01MkvName in `find . -type f -name "*.mkv" | sort`
 #	do
 #		strP01MkvName=${strP01MkvName/\.\//}
+#		strP01AudioStreamCount=$( step1_post_ffprobe_command ${dirSourceTranscodedMkv}/${strP01MkvName} | jq -c '.streams[] | select(.codec_type=="audio" and .tags.title==null) | [.channels]' | wc -l )
+#		strP01IndexList=$( step1_post_ffprobe_command ${dirSourceTranscodedMkv}/${strP01MkvName} | jq -r '.streams[] | select(.codec_type=="audio" and .tags.title==null) | [.index]')
 #
-	#	We could start iterating of the above with a Bash for loop if our data does not contain spaces or newlines. 
-	#	But since titles contain spaces, we better base64 encode each item. 
-#
-#	sample='[{"name":"foo"},{"name":"bar"}]'
-#	for row in $(echo "${sample}" | jq -r '.[] | @base64'); do
-#	    _jq() {
-#	     echo ${row} | base64 --decode | jq -r ${1}
-#	    }
-#	
-#   	echo $(_jq '.name')
-#	done
-#
-#
-#		strP01AudioStreamCount=$( step1_post_ffprobe_command $strP01MkvName | jq -c '.streams[] | select(.codec_type=="audio")' | wc -l )
-#
-#		for ((i=1;i<=strP01AudioStreamCount;i++)); do
- #   		echo $i
+#		for strP01IndexNo in `echo $strP01IndexList`
+#		do
+#			((strP01IndexNo++))
+#			
+#			case $strP01IndexList in
+#				1) 
+#					strP01TranscodedAudioStreamTitle="Mono"
+#					;;
+#				2) 
+#					strP01TranscodedAudioStreamTitle="Stereo"
+#					;;
+#				3)	
+#					strP01TranscodedAudioStreamTitle="Stereo 2.1"
+#					;;	
+#				6) 
+#					strP01TranscodedAudioStreamTitle="Surround 5.1"
+#					;;
+#				7)
+#					strP01TranscodedAudioStreamTitle="Surround 6.1"
+#					;;	
+#				8) 
+#					strP01TranscodedAudioStreamTitle="Surround 7.1"
+#					;;	
+#			    *)
+#			    	strP01TranscodedAudioStreamTitle=""
+#					;;
+#			esac
+#			
+#			mkvpropedit $FILE --edit track:$strP01IndexNo --set name=${strP01TranscodedAudioStreamTitle}
+#			echo "Naming audio track ${strP01IndexNo}:  $strP01TranscodedAudioStreamTitle"
+#			
 #		done
-#
-#ffprobe -v error -show_entries stream=index,format,codec_name,profile,channel_layout,channels,codec_type,field_order:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 ./Frozen\ \(2013\).mkv | jq -r '.streams[] | select(.codec_type=="audio" and .index==1) | .index, .codec_name, .channels, .channel_layout, .disposition.title'
-#
-#
+		
+
 
 	echo " "
 	echo "Step 1 complete" 
@@ -3142,7 +3289,11 @@ create_folder_and_move() {
 
 			# Determine the Season number
 			#strTVShowSeasonNo=$( echo "$strP02FileName" | sed 's/.*\ -\ S//g' | cut -c1-2 | sed 's/^0*//g' )
-			strTVShowSeasonNo=$( echo "$strP02FileName" | cut -d"-" -f2 | sed 's/.*\ S//g' | cut -c1-2 | sed 's/^0*//g' )
+			strTVShowSeasonNo=$( echo "$strP02FileName" | cut -d"-" -f2 | sed 's/.*\ S//g' | cut -c1-2 | sed 's/^0//g' )
+			
+			echo "strP02FileName:  $strP02FileName"
+			echo "strTVShowSeasonNo:  $strTVShowSeasonNo"
+			sleep 3
 
 			if [ ! -d ${dirTranscodedWorkDir}/${strTVShowName} ]
 			then
@@ -3474,23 +3625,117 @@ copy_raw_content_to_media() {
 	dirSourceRawMKVContent="$dirReadyForTranscoding"
 	
 	# Destination Directory
-	dirDestinationRawMKVContent="$dirMediaDir/_New"
+	dirDestinationRawMKVContent="$dirMediaDir"
 	
 	cd $dirSourceRawMKVContent
-	
-	echo "About to begin copying raw MKVs to the Media folder on the NAS or ext HDD ..."
-	echo "Command:"
-	echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
-		
-	if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/
-	then
-		echo "Copy successful"
-		rm -v $dirSourceRawMKVContent/*
-	else
-		echo "Copy failure, exit status $?"
-		exit
-	fi		
 
+	case $dirDestinationRawMKVContent in
+		ARCHIVE)
+			dirDestinationRawMKVContent1="/mnt/g/_New"
+			dirDestinationRawMKVContent2="/mnt/h/_New"
+
+			echo "About to begin copying raw MKVs to the ext HDD Archive Folders' holding area ..."
+			echo "Command:"
+			echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
+		
+			if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent1/
+			then
+				echo "Copy 1 successful"
+			else
+				echo "Copy failure, exit status $?"
+				exit
+			fi
+	
+			if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent2/
+			then
+				echo "Copy 2 successful"
+				rm -v $dirSourceRawMKVContent/*
+			else
+				echo "Copy failure, exit status $?"
+				exit
+			fi
+			;;
+			
+		Pretend_ARCHIVE_Win)
+			dirDestinationRawMKVContent1="/mnt/e/Engine_Room-TEST/Pretend_Archive-1/_New"
+			dirDestinationRawMKVContent2="/mnt/e/Engine_Room-TEST/Pretend_Archive-2/_New"
+
+			echo "About to begin copying raw MKVs to the ext HDD Archive Folders' holding area ..."
+			echo "Command:"
+			echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
+		
+			if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent1/
+			then
+				echo "Copy 1 successful"
+			else
+				echo "Copy failure, exit status $?"
+				exit
+			fi
+	
+			if mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent2/
+			then
+				echo "Move 2 successful"
+			else
+				echo "Move failure, exit status $?"
+				exit
+			fi			
+			;;
+			
+		Pretend_ARCHIVE_Mac)
+			dirDestinationRawMKVContent1="/Volumes/4TB/Engine_Room-TEST/Pretend_Archive-1/_New"
+			dirDestinationRawMKVContent2="/Volumes/4TB/Engine_Room-TEST/Pretend_Archive-2/_New"
+
+			echo "About to begin copying raw MKVs to the ext HDD Archive Folders' holding area ..."
+			echo "Command:"
+			echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
+		
+			if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent1/
+			then
+				echo "Copy 1 successful"
+			else
+				echo "Copy failure, exit status $?"
+				exit
+			fi
+	
+			if mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent2/
+			then
+				echo "Move 2 successful"
+			else
+				echo "Move failure, exit status $?"
+				exit
+			fi			
+			;;
+			
+		"/mnt/e/_MEDIA_FOR_NAS"|"/Volumes/4TB/Engine_Room-TEST/Pretend_Media")
+			echo "About to begin moving raw MKVs to the _MEDIA_FOR_NAS folder ..."
+			echo "Command:"
+			echo "mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/_New/"	
+		
+			if mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/_New/
+			then
+				echo "Move successful"
+			else
+				echo "Move failure, exit status $?"
+				exit
+			fi
+			;;		
+			
+		*)
+			echo "About to begin copying raw MKVs to the Media folder on the NAS or ext HDD ..."
+			echo "Command:"
+			echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/_New"	
+		
+			if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/_New/
+			then
+				echo "Copy successful"
+				rm -v $dirSourceRawMKVContent/*
+			else
+				echo "Copy failure, exit status $?"
+				exit
+			fi		
+			;;
+	esac		
+	
 
 	echo " "
 	echo "Step 7 complete" 
@@ -3519,6 +3764,9 @@ post_runbook() {
 	strStartDateTime=$(date "+%Y%m%d-%H%M%S")
 	echo "Start time:   $strStartDateTime"
 	echo ""
+
+	# Step 0:  	Correctly add HDR info from source -> transcode
+	add_HDR_to_transcoded
 
 	# Step 1:  	Correctly title the transcoded audio titles
 	add_titles_to_transcoded_audio
