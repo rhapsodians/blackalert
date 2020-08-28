@@ -1,7 +1,7 @@
 # Change Log #
 
 ## 0.31 ##
-_23 August 2020_
+_28 August 2020_
 - WSL mount bug fixes
 - added HDR post-processing
 - fixed the "Season 0" folder where the zero was missing
@@ -10,6 +10,7 @@ _23 August 2020_
 - Post-processing: if the raw source target is the same "E" drive as ready-for-transcoding, swap the copy to a move.
 - 4K/HDR - check to ensure `--deinterlace` is not included due to the lack `.streams[0].field_order` not being set for 2160p content
 - If you choose to active "- Disable forced subtitle burn-in" in the menu choices, the Forced subsitle stream is now embedded automatically (usually, it's excluded).
+- New 3.5" HDD archive for raw content: two new drives will be added for archiving. These will be exFAT-formatted drives for on-site/off-site archives. Once post-transcoding clean-up starts, the raw source will be copied to each drive.
 
 ## 0.30 ##
 _17 July 2020_

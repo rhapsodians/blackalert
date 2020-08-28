@@ -2240,12 +2240,12 @@ other-transcode_commands() {
 			if [ "$str05DefaultAudioTrackSubForcedFlagPresence" -eq "1" ]
 			then
 				arrHwTranscodeRbCommand+=(--burn-subtitle auto)
-			else
+			fi
+		else
 				if [ "$str05SubtitleForcedPresence" -eq "1" ]
 				then
 					arrHwTranscodeRbCommand+=(--add-subtitle \"Forced\")
 				fi
-			fi
 		fi	
 
 
@@ -2742,15 +2742,16 @@ Please select one of the following:
   2. /Volumes/4TB/_MEDIA_FOR_NAS
   3. /mnt/m
   4. /mnt/e/_MEDIA_FOR_NAS
+  5. ARCHIVE Copies
   0. Quit
 	
 ===============================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-4] > "
+	  read -p "Enter selection [0-5] > "
 
-  		if [[ $REPLY =~ ^[0-4]$ ]]; then
+  		if [[ $REPLY =~ ^[0-5]$ ]]; then
     	case $REPLY in
      	1)
            	dirMediaDir="/Volumes/Media/_New"
@@ -2768,6 +2769,10 @@ _EOF_
         	dirMediaDir="/mnt/e/_MEDIA_FOR_NAS"
           	break
           	;; 	
+        5) 
+        	dirMediaDir="ARCHIVE"
+        	break
+        	;;  	
         0)
         	exit
         	;;	
@@ -3033,15 +3038,16 @@ Please select one of the following:
 
   1. /Volumes/4TB/Engine_Room-TEST/Pretend_Media
   2. /mnt/e/Engine_Room-TEST/Pretend_Media_for_NAS
+  3. ARCHIVE Copies
   0. Quit
 	
 ===============================================================================
 
 _EOF_
 
-  	read -p "Enter selection [0-2] > "
+  	read -p "Enter selection [0-4] > "
 
-  	if [[ $REPLY =~ ^[0-2]$ ]]; then
+  	if [[ $REPLY =~ ^[0-4]$ ]]; then
     	case $REPLY in
      	1)
            	dirMediaDir="/Volumes/4TB/Engine_Room-TEST/Pretend_Media"
@@ -3051,6 +3057,14 @@ _EOF_
       	  	dirMediaDir="/mnt/e/Engine_Room-TEST/Pretend_Media_for_NAS"
           	break
           	;;
+        3)
+        	dirMediaDir="Pretend_ARCHIVE_Mac"
+        	break
+        	;;  	
+        4)
+         	dirMediaDir="Pretend_ARCHIVE_Win"
+        	break
+        	;;         	
         0)
         	exit
         	;;	
@@ -3106,13 +3120,8 @@ add_HDR_to_transcoded() {
 				
 		strStep00RawSourceMKV="$dirReadyForTranscoding/$strP00FileName"			
 		strStep00TranscodedTargetMKV="$dirTranscodedWorkDir/$strP00FileName"
-
-		echo "strStep00RawSourceMKV:   $strStep00RawSourceMKV"
-		echo "strStep00TranscodedTargetMKV: $strStep00TranscodedTargetMKV"
-
 	
 		step0_checkForHDR=$(ffprobe -v error -show_entries stream=index,color_primaries -print_format json=compact=1 ${strStep00RawSourceMKV} | jq -r '.streams[0] | .color_primaries' )
-		echo "step0_checkForHDR:  $step0_checkForHDR"
 	
 		if [[ "$step0_checkForHDR" = "bt2020" ]]
 		then
@@ -3619,35 +3628,114 @@ copy_raw_content_to_media() {
 	dirDestinationRawMKVContent="$dirMediaDir"
 	
 	cd $dirSourceRawMKVContent
-	
-	if [[ $dirSourceRawMKVContent="/mnt/e/_MEDIA_FOR_NAS" ]] || [[ $dirSourceRawMKVContent="/Volumes/4TB/Engine_Room-TEST/Pretend_Media" ]]
-	then
-		echo "About to begin moving raw MKVs to the _MEDIA_FOR_NAS folder ..."
-		echo "Command:"
-		echo "mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
+
+	case $dirDestinationRawMKVContent in
+		ARCHIVE)
+			dirDestinationRawMKVContent1="/mnt/g/_New"
+			dirDestinationRawMKVContent2="/mnt/h/_New"
+
+			echo "About to begin copying raw MKVs to the ext HDD Archive Folders' holding area ..."
+			echo "Command:"
+			echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
 		
-		if mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/
-		then
-			echo "Move successful"
-		else
-			echo "Move failure, exit status $?"
-			exit
-		fi		
+			if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent1/
+			then
+				echo "Copy 1 successful"
+			else
+				echo "Copy failure, exit status $?"
+				exit
+			fi
 	
-	else
-		echo "About to begin copying raw MKVs to the Media folder on the NAS or ext HDD ..."
-		echo "Command:"
-		echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
+			if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent2/
+			then
+				echo "Copy 2 successful"
+				rm -v $dirSourceRawMKVContent/*
+			else
+				echo "Copy failure, exit status $?"
+				exit
+			fi
+			;;
+			
+		Pretend_ARCHIVE_Win)
+			dirDestinationRawMKVContent1="/mnt/e/Engine_Room-TEST/Pretend_Archive-1/_New"
+			dirDestinationRawMKVContent2="/mnt/e/Engine_Room-TEST/Pretend_Archive-2/_New"
+
+			echo "About to begin copying raw MKVs to the ext HDD Archive Folders' holding area ..."
+			echo "Command:"
+			echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
 		
-		if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/
-		then
-			echo "Copy successful"
-			rm -v $dirSourceRawMKVContent/*
-		else
-			echo "Copy failure, exit status $?"
-			exit
-		fi		
-	fi
+			if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent1/
+			then
+				echo "Copy 1 successful"
+			else
+				echo "Copy failure, exit status $?"
+				exit
+			fi
+	
+			if mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent2/
+			then
+				echo "Move 2 successful"
+			else
+				echo "Move failure, exit status $?"
+				exit
+			fi			
+			;;
+			
+		Pretend_ARCHIVE_Mac)
+			dirDestinationRawMKVContent1="/Volumes/4TB/Engine_Room-TEST/Pretend_Archive-1/_New"
+			dirDestinationRawMKVContent2="/Volumes/4TB/Engine_Room-TEST/Pretend_Archive-2/_New"
+
+			echo "About to begin copying raw MKVs to the ext HDD Archive Folders' holding area ..."
+			echo "Command:"
+			echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
+		
+			if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent1/
+			then
+				echo "Copy 1 successful"
+			else
+				echo "Copy failure, exit status $?"
+				exit
+			fi
+	
+			if mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent2/
+			then
+				echo "Move 2 successful"
+			else
+				echo "Move failure, exit status $?"
+				exit
+			fi			
+			;;
+			
+		"/mnt/e/_MEDIA_FOR_NAS"|"/Volumes/4TB/Engine_Room-TEST/Pretend_Media")
+			echo "About to begin moving raw MKVs to the _MEDIA_FOR_NAS folder ..."
+			echo "Command:"
+			echo "mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/_New/"	
+		
+			if mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/_New/
+			then
+				echo "Move successful"
+			else
+				echo "Move failure, exit status $?"
+				exit
+			fi
+			;;		
+			
+		*)
+			echo "About to begin copying raw MKVs to the Media folder on the NAS or ext HDD ..."
+			echo "Command:"
+			echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/_New"	
+		
+			if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/_New/
+			then
+				echo "Copy successful"
+				rm -v $dirSourceRawMKVContent/*
+			else
+				echo "Copy failure, exit status $?"
+				exit
+			fi		
+			;;
+	esac		
+	
 
 	echo " "
 	echo "Step 7 complete" 
