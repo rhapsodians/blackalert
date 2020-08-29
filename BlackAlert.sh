@@ -3633,10 +3633,12 @@ copy_raw_content_to_media() {
 		ARCHIVE)
 			dirDestinationRawMKVContent1="/mnt/g/_New"
 			dirDestinationRawMKVContent2="/mnt/h/_New"
+			dirDestinationRawMKVContent3="/mnt/3/_MEDIA_FOR_NAS"
+
 
 			echo "About to begin copying raw MKVs to the ext HDD Archive Folders' holding area ..."
 			echo "Command:"
-			echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
+			echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent1/"	
 		
 			if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent1/
 			then
@@ -3646,6 +3648,11 @@ copy_raw_content_to_media() {
 				exit
 			fi
 	
+			echo "About to begin copying raw MKVs to the ext HDD Archive Folders' holding area ..."
+			echo "Command:"
+			echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent2/"	
+	
+	
 			if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent2/
 			then
 				echo "Copy 2 successful"
@@ -3654,6 +3661,19 @@ copy_raw_content_to_media() {
 				echo "Copy failure, exit status $?"
 				exit
 			fi
+			
+			echo "About to begin moving raw MKVs to the NAS holding area ..."
+			echo "Command:"
+			echo "mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent3/"	
+						
+			if mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent3/
+			then
+				echo "Move successful"
+			else
+				echo "Move failure, exit status $?"
+				exit
+			fi			
+		
 			;;
 			
 		Pretend_ARCHIVE_Win)

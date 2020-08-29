@@ -2,6 +2,7 @@
 
 ## 0.32 ##
 _29 August 2020_
+- When updating the pair of Media_X disks for raw content, one move is needed when running on `BlackAlert`: `04_ReadyForTranscoding -> E:\_MEDIA_FOR_NAS`, two copies to the `G:` and `H:` drives
 
 
 ## 0.31 ##
