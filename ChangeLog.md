@@ -1,8 +1,9 @@
 # Change Log #
 
 ## 0.32 ##
-_29 August 2020_
-- When updating the pair of Media_X disks for raw content, one move is needed when running on `BlackAlert`: `04_ReadyForTranscoding -> E:\_MEDIA_FOR_NAS`, two copies to the `G:` and `H:` drives
+_2 September 2020_
+- Minor path typos for folder naming function
+- Removed sleep in folder naming function
 
 
 ## 0.31 ##

@@ -3290,10 +3290,6 @@ create_folder_and_move() {
 			# Determine the Season number
 			#strTVShowSeasonNo=$( echo "$strP02FileName" | sed 's/.*\ -\ S//g' | cut -c1-2 | sed 's/^0*//g' )
 			strTVShowSeasonNo=$( echo "$strP02FileName" | cut -d"-" -f2 | sed 's/.*\ S//g' | cut -c1-2 | sed 's/^0//g' )
-			
-			echo "strP02FileName:  $strP02FileName"
-			echo "strTVShowSeasonNo:  $strTVShowSeasonNo"
-			sleep 3
 
 			if [ ! -d ${dirTranscodedWorkDir}/${strTVShowName} ]
 			then
@@ -3633,7 +3629,7 @@ copy_raw_content_to_media() {
 		ARCHIVE)
 			dirDestinationRawMKVContent1="/mnt/g/_New"
 			dirDestinationRawMKVContent2="/mnt/h/_New"
-			dirDestinationRawMKVContent3="/mnt/3/_MEDIA_FOR_NAS"
+			dirDestinationRawMKVContent3="/mnt/e/_MEDIA_FOR_NAS"
 
 
 			echo "About to begin copying raw MKVs to the ext HDD Archive Folders' holding area ..."
@@ -3729,9 +3725,9 @@ copy_raw_content_to_media() {
 		"/mnt/e/_MEDIA_FOR_NAS"|"/Volumes/4TB/Engine_Room-TEST/Pretend_Media")
 			echo "About to begin moving raw MKVs to the _MEDIA_FOR_NAS folder ..."
 			echo "Command:"
-			echo "mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/_New/"	
+			echo "mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
 		
-			if mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/_New/
+			if mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/
 			then
 				echo "Move successful"
 			else
