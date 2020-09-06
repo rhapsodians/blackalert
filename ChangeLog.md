@@ -4,6 +4,8 @@
 _2 September 2020_
 - Minor path typos for folder naming function
 - Removed sleep in folder naming function
+- Changed Mac test HD from "4TB" to "3TB" after drive failure.
+- Added "pretend" checks/creation when run in test mode to standardise build-out
 
 
 ## 0.31 ##

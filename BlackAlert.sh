@@ -117,6 +117,12 @@ pre_setup_checks() {
 	dirReadyForTranscoding="$dirMacWorkDir/04_ReadyForTranscoding"
 	dirTranscoded="$dirMacWorkDir/05_Transcoded"
 	dirArchive="$dirMacWorkDir/06_Archive"
+	dirPretend_Archive1="$dirMacWorkDir/Pretend_Archive-1"
+	dirPretend_Archive2="$dirMacWorkDir/Pretend_Archive-2"
+	dirPretend_Dropbox="$dirMacWorkDir/Pretend_Dropbox"
+	dirPretend_MediaForNAS="$dirMacWorkDir/Pretend_Media_for_NAS"
+	dirPretend_Plex="$dirMacWorkDir/Pretend_Plex"
+	
 
 	dirPlexMovieFolder="/Volumes/Plex/Movies"
 	strPlexMovieName="${strPlexFolder}/${strMovieName}/${strMovieName}.mkv"
@@ -209,7 +215,7 @@ Current Working Directory
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/4TB/Engine_Room-TEST
+  1. /Volumes/3TB/Engine_Room-TEST
   2. /mnt/e/Engine_Room-TEST
   3. /home/parallels/Desktop/Engine_Room-TEST
   0. Quit
@@ -223,7 +229,7 @@ _EOF_
   		if [[ $REPLY =~ ^[0-3]$ ]]; then
     	case $REPLY in
      	1)
-           	dirMacWorkDir="/Volumes/4TB/Engine_Room-TEST"
+           	dirMacWorkDir="/Volumes/3TB/Engine_Room-TEST"
           	break
           	;;
       	2)
@@ -353,6 +359,12 @@ setup_checks() {
 		
 	#Create an array of all the working folders and test for their availability
 	arrDirArray=($dirInbox $dirProcessing $dirReadyForTranscoding $dirOutbox $dirOutboxCommands $dirOutboxSummaries $dirOutboxLogs $dirTranscoded $dirArchive)
+
+	if [ "$strEnv" = "test" ]
+	then
+		arrDirArray+=($dirPretend_Archive1 $dirPretend_Archive2 $dirPretend_Dropbox $dirPretend_MediaForNAS $dirPretend_Plex)
+	fi
+
 		
 	for folder in "${arrDirArray[@]}"
 	do
@@ -2818,7 +2830,7 @@ Raw Original MKV Directory
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/4TB/Engine_Room-TEST/04_ReadyForTranscoding
+  1. /Volumes/3TB/Engine_Room-TEST/04_ReadyForTranscoding
   2. /mnt/e/Engine_Room-TEST/04_ReadyForTranscoding
   0. Quit
 	
@@ -2831,7 +2843,7 @@ _EOF_
   	if [[ $REPLY =~ ^[0-2]$ ]]; then
     	case $REPLY in
      	1)
-           	dirReadyForTranscoding="/Volumes/4TB/Engine_Room-TEST/04_ReadyForTranscoding"
+           	dirReadyForTranscoding="/Volumes/3TB/Engine_Room-TEST/04_ReadyForTranscoding"
           	break
           	;;
       	2)
@@ -2870,7 +2882,7 @@ Transcoded Output Directory Set-up
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/4TB/Engine_Room-TEST/05_Transcoded
+  1. /Volumes/3TB/Engine_Room-TEST/05_Transcoded
   2. /home/parallels/Desktop/Engine_Room-TEST/05_Transcoded
   3. /mnt/d/05_Transcoded
   0. Quit
@@ -2884,7 +2896,7 @@ _EOF_
   	if [[ $REPLY =~ ^[0-3]$ ]]; then
     	case $REPLY in
      	1)
-           	dirTranscodedWorkDir="/Volumes/4TB/Engine_Room-TEST/05_Transcoded"
+           	dirTranscodedWorkDir="/Volumes/3TB/Engine_Room-TEST/05_Transcoded"
           	break
           	;;
       	2)
@@ -2935,7 +2947,7 @@ Plex Location Set-up
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/4TB/Engine_Room-TEST/Pretend_Plex
+  1. /Volumes/3TB/Engine_Room-TEST/Pretend_Plex
   2. /mnt/e/Engine_Room-TEST/Pretend_Plex
   0. Quit
 	
@@ -2948,7 +2960,7 @@ _EOF_
   	if [[ $REPLY =~ ^[0-2]$ ]]; then
     	case $REPLY in
      	1)
-           	dirPlexDir="/Volumes/4TB/Engine_Room-TEST/Pretend_Plex"
+           	dirPlexDir="/Volumes/3TB/Engine_Room-TEST/Pretend_Plex"
           	break
           	;;
       	2)
@@ -2986,7 +2998,7 @@ Dropbox Logs Set-up
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/4TB/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output
+  1. /Volumes/3TB/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output
   2. /mnt/e/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output
   0. Quit
 	
@@ -2999,7 +3011,7 @@ _EOF_
   		if [[ $REPLY =~ ^[0-2]$ ]]; then
     	case $REPLY in
      	1)
-           	dirDropboxLogsDir="/Volumes/4TB/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output"
+           	dirDropboxLogsDir="/Volumes/3TB/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output"
           	break
           	;;
       	2)
@@ -3036,7 +3048,7 @@ Media Set-up
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/4TB/Engine_Room-TEST/Pretend_Media
+  1. /Volumes/3TB/Engine_Room-TEST/Pretend_Media
   2. /mnt/e/Engine_Room-TEST/Pretend_Media_for_NAS
   3. ARCHIVE Copies
   0. Quit
@@ -3050,7 +3062,7 @@ _EOF_
   	if [[ $REPLY =~ ^[0-4]$ ]]; then
     	case $REPLY in
      	1)
-           	dirMediaDir="/Volumes/4TB/Engine_Room-TEST/Pretend_Media"
+           	dirMediaDir="/Volumes/3TB/Engine_Room-TEST/Pretend_Media"
           	break
           	;;
       	2)
@@ -3698,8 +3710,8 @@ copy_raw_content_to_media() {
 			;;
 			
 		Pretend_ARCHIVE_Mac)
-			dirDestinationRawMKVContent1="/Volumes/4TB/Engine_Room-TEST/Pretend_Archive-1/_New"
-			dirDestinationRawMKVContent2="/Volumes/4TB/Engine_Room-TEST/Pretend_Archive-2/_New"
+			dirDestinationRawMKVContent1="/Volumes/3TB/Engine_Room-TEST/Pretend_Archive-1/_New"
+			dirDestinationRawMKVContent2="/Volumes/3TB/Engine_Room-TEST/Pretend_Archive-2/_New"
 
 			echo "About to begin copying raw MKVs to the ext HDD Archive Folders' holding area ..."
 			echo "Command:"
@@ -3722,7 +3734,7 @@ copy_raw_content_to_media() {
 			fi			
 			;;
 			
-		"/mnt/e/_MEDIA_FOR_NAS"|"/Volumes/4TB/Engine_Room-TEST/Pretend_Media")
+		"/mnt/e/_MEDIA_FOR_NAS"|"/Volumes/3TB/Engine_Room-TEST/Pretend_Media")
 			echo "About to begin moving raw MKVs to the _MEDIA_FOR_NAS folder ..."
 			echo "Command:"
 			echo "mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
