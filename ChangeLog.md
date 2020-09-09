@@ -6,6 +6,7 @@ _2 September 2020_
 - Removed sleep in folder naming function
 - Changed Mac test HD from "4TB" to "3TB" after drive failure.
 - Added "pretend" checks/creation when run in test mode to standardise build-out
+- `mv` command was failing ... added double quotes
 
 
 ## 0.31 ##
