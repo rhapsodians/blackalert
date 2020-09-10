@@ -3674,7 +3674,7 @@ copy_raw_content_to_media() {
 			echo "Command:"
 			echo "mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent3/"	
 						
-			if mv -v -i ${dirSourceRawMKVContent}/* ${dirDestinationRawMKVContent3}/"
+			if mv -v -i ${dirSourceRawMKVContent}/* ${dirDestinationRawMKVContent3}/
 			then
 				echo "Move successful"
 			else
