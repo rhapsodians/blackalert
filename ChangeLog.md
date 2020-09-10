@@ -7,6 +7,7 @@ _2 September 2020_
 - Changed Mac test HD from "4TB" to "3TB" after drive failure.
 - Added "pretend" checks/creation when run in test mode to standardise build-out
 - `mv` command was failing ... added double quotes
+- For 4K forced-subtitling, changed `--add-subtitle "Forced"` to `--add-subtitle auto` so that the default subtitle and forced flags were auto-set.
 
 
 ## 0.31 ##

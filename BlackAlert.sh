@@ -2256,7 +2256,7 @@ other-transcode_commands() {
 		else
 				if [ "$str05SubtitleForcedPresence" -eq "1" ]
 				then
-					arrHwTranscodeRbCommand+=(--add-subtitle \"Forced\")
+					arrHwTranscodeRbCommand+=(--add-subtitle auto)
 				fi
 		fi	
 
@@ -3674,7 +3674,7 @@ copy_raw_content_to_media() {
 			echo "Command:"
 			echo "mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent3/"	
 						
-			if mv -v -i "$dirSourceRawMKVContent/* $dirDestinationRawMKVContent3/"
+			if mv -v -i ${dirSourceRawMKVContent}/* ${dirDestinationRawMKVContent3}/"
 			then
 				echo "Move successful"
 			else
