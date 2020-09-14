@@ -8,6 +8,7 @@ _2 September 2020_
 - Added "pretend" checks/creation when run in test mode to standardise build-out
 - `mv` command was failing ... added double quotes
 - For 4K forced-subtitling, changed `--add-subtitle "Forced"` to `--add-subtitle auto` so that the default subtitle and forced flags were auto-set.
+- Added `--decode all` for PC-based Nvidia HEVC content
 
 
 ## 0.31 ##
