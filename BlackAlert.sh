@@ -1980,7 +1980,7 @@ other-transcode_commands() {
 				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
 			else
 				# arrHwTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
-				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq --decode all)
+				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq)
 			fi			
 		fi
 
