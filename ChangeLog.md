@@ -8,7 +8,7 @@ _2 September 2020_
 - Added "pretend" checks/creation when run in test mode to standardise build-out
 - `mv` command was failing ... added double quotes
 - For 4K forced-subtitling, changed `--add-subtitle "Forced"` to `--add-subtitle auto` so that the default subtitle and forced flags were auto-set.
-
+- Removed quotes from `--add-audio` and `--add-subtitle` strings to ensure both `call` commands and those run on the CLI act in the same way. Quotes lead to `--add-audio "AD"=surround` being processed as surround within a `call` command but as stereo (incorrectly) if run from the commandline.
 
 ## 0.31 ##
 _28 August 2020_

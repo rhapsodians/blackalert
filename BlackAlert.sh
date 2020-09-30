@@ -2193,19 +2193,19 @@ other-transcode_commands() {
 				case $str05DefaultAudioTrackCommentaryChannelLayout in
 			
 					"4.0"|"5.0(side)"|"5.1(side)"|"6.1"|"7.1") 
-						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=surround )
+						arrHwTranscodeRbCommand+=(--add-audio Commentary=surround )
 						;;
 
 					"3.0"|stereo)
-						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=stereo )
+						arrHwTranscodeRbCommand+=(--add-audio Commentary=stereo )
 						;;
 
 					mono)
-						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
+						arrHwTranscodeRbCommand+=(--add-audio Commentary )
 						;;
 
 					*)	
-						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
+						arrHwTranscodeRbCommand+=(--add-audio Commentary )
 						;;	
 				esac	
 			fi
@@ -2215,19 +2215,19 @@ other-transcode_commands() {
 				case $str05DefaultAudioTrackADChannelLayout in
 		
 					"4.0"|"5.0(side)"|"5.1(side)"|"6.1"|"7.1") 
-						arrHwTranscodeRbCommand+=(--add-audio \"AD\"=surround )
+						arrHwTranscodeRbCommand+=(--add-audio AD=surround )
 						;;
 				
 					"3.0"|stereo)
-						arrHwTranscodeRbCommand+=(--add-audio \"AD\"=stereo )
+						arrHwTranscodeRbCommand+=(--add-audio AD=stereo )
 						;;
 				
 					mono)
-						arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
+						arrHwTranscodeRbCommand+=(--add-audio AD )
 						;;
 				
 					*)	
-						arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
+						arrHwTranscodeRbCommand+=(--add-audio AD )
 						;;	
 				esac	
 			fi
@@ -2281,17 +2281,17 @@ other-transcode_commands() {
 			eng)
 				if [ "$str05SubtitleEnglishPresence" -eq "1" ]
 				then
-					arrHwTranscodeRbCommand+=(--add-subtitle \"English\")
+					arrHwTranscodeRbCommand+=(--add-subtitle English)
 				fi
 				
 				if [ "$str05SubtitleSDHPresence" -eq 1 ]
 				then
-					arrHwTranscodeRbCommand+=(--add-subtitle \"SDH\")
+					arrHwTranscodeRbCommand+=(--add-subtitle SDH)
 				fi
 				
 				if [ "$str05SubtitleCommentaryPresence" -ge 1 ]
 				then
-					arrHwTranscodeRbCommand+=(--add-subtitle \"Commentary\")
+					arrHwTranscodeRbCommand+=(--add-subtitle Commentary)
 				fi
 				;;
 			*)
@@ -2299,22 +2299,22 @@ other-transcode_commands() {
 				then
 					if [ "$str05SubtitleCommentaryPresence" -ge 1 ]
 					then
-						arrHwTranscodeRbCommand+=(--add-subtitle \"Commentary\")
+						arrHwTranscodeRbCommand+=(--add-subtitle Commentary)
 					fi
 				else
 					if [ "$str05SubtitleEnglishPresence" -eq "1" ]
 					then
-						arrHwTranscodeRbCommand+=(--add-subtitle \"English\")
+						arrHwTranscodeRbCommand+=(--add-subtitle English)
 					fi
 				
 					if [ "$str05SubtitleSDHPresence" -eq 1 ]
 					then
-						arrHwTranscodeRbCommand+=(--add-subtitle \"SDH\")
+						arrHwTranscodeRbCommand+=(--add-subtitle SDH)
 					fi
 				
 					if [ "$str05SubtitleCommentaryPresence" -ge 1 ]
 					then
-						arrHwTranscodeRbCommand+=(--add-subtitle \"Commentary\")
+						arrHwTranscodeRbCommand+=(--add-subtitle Commentary)
 					fi
 				fi
 				;;
