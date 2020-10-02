@@ -2060,15 +2060,15 @@ other-transcode_commands() {
 				
 					
 				*)
-					echo "*********************************************************************************"
+					echo "*******************************************************************************************"
 					echo "WARNING:    "
 					echo ""
 					echo "$FILE"
 					echo ""
-					echo "The Default audio track is neither FLAC, EAC3, AC-3, DTS, TrueHD nor PSM_S16LE"
+					echo "The Default audio track is neither FLAC, EAC3, AC-3, DTS, TrueHD, PCM_S16LE nor PCM_S24LE"
 					echo ""
 					echo "Please check ... exiting now"
-					echo "*********************************************************************************"
+					echo "*******************************************************************************************"
 					exit 1		
 				;;
 			esac
@@ -2115,16 +2115,19 @@ other-transcode_commands() {
 			pcm_s16le)
 				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
 				;;
+			pcm_s24le)
+				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
+				;;	
 			*)
-				echo "*********************************************************************************"
+				echo "*******************************************************************************************"
 				echo "WARNING:    "
 				echo ""
 				echo "$FILE"
 				echo ""
-				echo "The Default audio track is neither FLAC, EAC3, AC-3, DTS, TrueHD nor PSM_S16LE"
+				echo "The Default audio track is neither FLAC, EAC3, AC-3, DTS, TrueHD, PSM_S16LE nor PCM_S24LE"
 				echo ""
 				echo "Please check ... exiting now"
-				echo "*********************************************************************************"
+				echo "*******************************************************************************************"
 				exit 1		
 				;;
 		esac
@@ -2140,7 +2143,7 @@ other-transcode_commands() {
 		
 		case $str05DefaultAudioTrackCodec in
 		
-			flac|eac3|ac3|dts|truehd|pcm_s16le)
+			flac|eac3|ac3|dts|truehd|pcm_s16le|pcm_s24le)
 #				if [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
 				if [ "$str05DefaultAudioTrackChannels" = "1" ]
 				then
