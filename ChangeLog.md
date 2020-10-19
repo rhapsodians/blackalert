@@ -1,7 +1,7 @@
 # Change Log #
 
 ## 0.32 ##
-_2 September 2020_
+_20 October 2020_
 - Minor path typos for folder naming function
 - Removed sleep in folder naming function
 - Changed Mac test HD from "4TB" to "3TB" after drive failure.
@@ -11,6 +11,7 @@ _2 September 2020_
 - Removed quotes from `--add-audio` and `--add-subtitle` strings to ensure both `call` commands and those run on the CLI act in the same way. Quotes lead to `--add-audio "AD"=surround` being processed as surround within a `call` command but as stereo (incorrectly) if run from the commandline.
 - Added in logic to handle `pcm_s24le` audio tracks
 - Temporary usage of `beta_other-transcode` and using the `--preset p5` default.
+- Updated locations with `beta_other-transcode` instead of `other-transcode`
 
 
 ## 0.31 ##
