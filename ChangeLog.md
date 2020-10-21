@@ -12,6 +12,7 @@ _20 October 2020_
 - Added in logic to handle `pcm_s24le` audio tracks
 - Temporary usage of `beta_other-transcode` and using the `--preset p5` default.
 - Updated locations with `beta_other-transcode` instead of `other-transcode`
+- Added an option not to copy raw and transcoded mkv files to the targets - due to IO bug in WSL2
 
 
 ## 0.31 ##

@@ -2760,15 +2760,16 @@ Please select one of the following:
   3. /mnt/m
   4. /mnt/e/_MEDIA_FOR_NAS
   5. ARCHIVE Copies
+  6. Do not copy files - leave in-situ
   0. Quit
 	
 ===============================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-5] > "
+	  read -p "Enter selection [0-6] > "
 
-  		if [[ $REPLY =~ ^[0-5]$ ]]; then
+  		if [[ $REPLY =~ ^[0-6]$ ]]; then
     	case $REPLY in
      	1)
            	dirMediaDir="/Volumes/Media/_New"
@@ -2789,7 +2790,10 @@ _EOF_
         5) 
         	dirMediaDir="ARCHIVE"
         	break
-        	;;  	
+        	;; 
+        6)
+        	dirMediaDir="LEAVE"
+        	;;	 	
         0)
         	exit
         	;;	
@@ -3643,6 +3647,12 @@ copy_raw_content_to_media() {
 	cd $dirSourceRawMKVContent
 
 	case $dirDestinationRawMKVContent in
+		LEAVE)
+			echo "All raw and transcoded MKV files will remain in-situ."
+			echo "No copying will take place."
+			echo "Copies need to be manually transferred"
+			;;
+			
 		ARCHIVE)
 			dirDestinationRawMKVContent1="/mnt/g/_New"
 			dirDestinationRawMKVContent2="/mnt/h/_New"
