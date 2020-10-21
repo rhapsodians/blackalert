@@ -3587,40 +3587,50 @@ copy_transcoded_log_to_media() {
 
 copy_transcoded_content_to_plex() {
 
-	echo "*******************************************************************************"
-	echo "Starting Step 6 - Copy transcoded content to Plex" 
-	echo ""
-	echo ""
-
-	IFS=$'\n'
-	
-	# Source Directory
-	dirSourceTranscodedContent="$dirTranscodedWorkDir"
-	
-	# Destination Directory
-	dirDestinationPlex="$dirPlexDir/_New"
-	
-	cd $dirSourceTranscodedContent
-
-	echo "About to begin copying transcoded MKVs to the Plex folder on the NAS ..."
-	echo "Command:"
-	echo "cp -rv -i $dirSourceTranscodedContent/* $dirDestinationPlex"	
-			
-	if cp -rv -i $dirSourceTranscodedContent/* $dirDestinationPlex
+	if [[ dirMediaDir =! "LEAVE" ]]
 	then
-		echo "Copy successful"
-		rm -rv $dirSourceTranscodedContent/*
-		rm $dirDestinationPlex/commands.bat
+
+		echo "*******************************************************************************"
+		echo "Starting Step 6 - Copy transcoded content to Plex" 
+		echo ""
+		echo ""
+		
+		IFS=$'\n'
+		
+		# Source Directory
+		dirSourceTranscodedContent="$dirTranscodedWorkDir"
+		
+		# Destination Directory
+		dirDestinationPlex="$dirPlexDir/_New"
+		
+		cd $dirSourceTranscodedContent
+		
+		echo "About to begin copying transcoded MKVs to the Plex folder on the NAS ..."
+		echo "Command:"
+		echo "cp -rv -i $dirSourceTranscodedContent/* $dirDestinationPlex"	
+				
+		if cp -rv -i $dirSourceTranscodedContent/* $dirDestinationPlex
+		then
+			echo "Copy successful"
+			rm -rv $dirSourceTranscodedContent/*
+			rm $dirDestinationPlex/commands.bat
+		else
+			echo "Copy failure, exit status $?"
+			exit
+		fi		
+		
+		
+		echo " "
+		echo "Step 6 complete" 
+		echo "*******************************************************************************"	
+
 	else
-		echo "Copy failure, exit status $?"
-		exit
-	fi		
-
-
-	echo " "
-	echo "Step 6 complete" 
-	echo "*******************************************************************************"	
-
+		echo "*******************************************************************************"
+		echo "Starting Step 6 - Copy transcoded content to Plex" 
+		echo ""
+		echo "---- DISABLED ----"
+		echo ""
+	fi	
 
 }
 
