@@ -3587,7 +3587,7 @@ copy_transcoded_log_to_media() {
 
 copy_transcoded_content_to_plex() {
 
-	if [[ dirMediaDir =! "LEAVE" ]]
+	if [[ dirMediaDir != "LEAVE" ]]
 	then
 
 		echo "*******************************************************************************"
