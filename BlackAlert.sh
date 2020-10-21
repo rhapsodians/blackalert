@@ -2793,6 +2793,7 @@ _EOF_
         	;; 
         6)
         	dirMediaDir="LEAVE"
+        	break
         	;;	 	
         0)
         	exit
