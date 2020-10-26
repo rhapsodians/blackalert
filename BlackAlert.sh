@@ -3060,16 +3060,18 @@ Please select one of the following:
 
   1. /Volumes/3TB/Engine_Room-TEST/Pretend_Media
   2. /mnt/e/Engine_Room-TEST/Pretend_Media_for_NAS
-  3. ARCHIVE Copies
+  3. ARCHIVE Copies (Mac)
+  4. ARCHIVE Copies (Win)
+  5. Do not copy files - leave in-situ
   0. Quit
 	
 ===============================================================================
 
 _EOF_
 
-  	read -p "Enter selection [0-4] > "
+  	read -p "Enter selection [0-5] > "
 
-  	if [[ $REPLY =~ ^[0-4]$ ]]; then
+  	if [[ $REPLY =~ ^[0-5]$ ]]; then
     	case $REPLY in
      	1)
            	dirMediaDir="/Volumes/3TB/Engine_Room-TEST/Pretend_Media"
@@ -3086,7 +3088,11 @@ _EOF_
         4)
          	dirMediaDir="Pretend_ARCHIVE_Win"
         	break
-        	;;         	
+        	;;     
+        5)
+        	dirMediaDir="LEAVE"
+        	break
+        	;;	    	
         0)
         	exit
         	;;	
@@ -3587,7 +3593,7 @@ copy_transcoded_log_to_media() {
 
 copy_transcoded_content_to_plex() {
 
-	if [[ dirMediaDir != "LEAVE" ]]
+	if [[ $dirMediaDir != "LEAVE" ]]
 	then
 
 		echo "*******************************************************************************"
