@@ -1981,7 +1981,7 @@ other-transcode_commands() {
 			else
 				# arrHwTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
 #				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
-				arrHwTranscodeRbCommand=(call beta_other-transcode \"${strWinFile}\" --hevc --preset p5 )
+				arrHwTranscodeRbCommand=(call beta_other-transcode \"${strWinFile}\" --hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32)
 
 			fi			
 		fi
