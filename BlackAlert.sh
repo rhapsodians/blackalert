@@ -117,6 +117,12 @@ pre_setup_checks() {
 	dirReadyForTranscoding="$dirMacWorkDir/04_ReadyForTranscoding"
 	dirTranscoded="$dirMacWorkDir/05_Transcoded"
 	dirArchive="$dirMacWorkDir/06_Archive"
+	dirPretend_Archive1="$dirMacWorkDir/Pretend_Archive-1"
+	dirPretend_Archive2="$dirMacWorkDir/Pretend_Archive-2"
+	dirPretend_Dropbox="$dirMacWorkDir/Pretend_Dropbox"
+	dirPretend_MediaForNAS="$dirMacWorkDir/Pretend_Media_for_NAS"
+	dirPretend_Plex="$dirMacWorkDir/Pretend_Plex"
+	
 
 	dirPlexMovieFolder="/Volumes/Plex/Movies"
 	strPlexMovieName="${strPlexFolder}/${strMovieName}/${strMovieName}.mkv"
@@ -209,7 +215,7 @@ Current Working Directory
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/4TB/Engine_Room-TEST
+  1. /Volumes/3TB/Engine_Room-TEST
   2. /mnt/e/Engine_Room-TEST
   3. /home/parallels/Desktop/Engine_Room-TEST
   0. Quit
@@ -223,7 +229,7 @@ _EOF_
   		if [[ $REPLY =~ ^[0-3]$ ]]; then
     	case $REPLY in
      	1)
-           	dirMacWorkDir="/Volumes/4TB/Engine_Room-TEST"
+           	dirMacWorkDir="/Volumes/3TB/Engine_Room-TEST"
           	break
           	;;
       	2)
@@ -353,6 +359,12 @@ setup_checks() {
 		
 	#Create an array of all the working folders and test for their availability
 	arrDirArray=($dirInbox $dirProcessing $dirReadyForTranscoding $dirOutbox $dirOutboxCommands $dirOutboxSummaries $dirOutboxLogs $dirTranscoded $dirArchive)
+
+	if [ "$strEnv" = "test" ]
+	then
+		arrDirArray+=($dirPretend_Archive1 $dirPretend_Archive2 $dirPretend_Dropbox $dirPretend_MediaForNAS $dirPretend_Plex)
+	fi
+
 		
 	for folder in "${arrDirArray[@]}"
 	do
@@ -1778,6 +1790,67 @@ other-transcode_commands() {
 	echo "Location:   $dirOutboxCommands"
 	echo "-------------------------------------------------------------------------------"
 	echo "Building the other-transcode command for:"
+
+
+
+	if [ "$strBatchMode" = "On" ]
+	then
+		
+		# BatchMode is ACTIVE
+
+		while true; do
+		cat << _EOF_
+
+
+
+-------------------------------------------------------------------------------
+Dropbox Override Set-up
+-------------------------------------------------------------------------------
+
+Please select one of the following:
+===============================================================================
+
+  1. /Users/joe/Dropbox/Transcoding_Output/Overrides
+  2. /mnt/c/Users/Joe/Dropbox/Transcoding_Output/Overrides
+  0. Quit
+	
+===============================================================================
+
+_EOF_
+
+	  read -p "Enter selection [0-2] > "
+
+  		if [[ $REPLY =~ ^[0-2]$ ]]; then
+    	case $REPLY in
+     	1)
+           	dirDropboxBatchOverridesDir="/Users/joe/Dropbox/Transcoding_Output/Overrides"
+          	break
+          	;;
+      	2)
+      	  	dirDropboxBatchOverridesDir="/mnt/c/Users/Joe/Dropbox/Transcoding_Output/Overrides"
+          	break
+          	;;
+        0)
+        	exit
+        	;;	
+    	esac
+  	else
+    	echo "Invalid entry."
+    	sleep $DELAY
+  	fi
+	done
+
+	echo ""
+	echo ""
+	echo "Dropbox Overrides Directory:  	$dirDropboxBatchOverridesDir"
+	echo "-------------------------------------------------------------------------------"
+	echo ""
+	echo ""
+	echo ""
+
+	fi
+
+
 	 
 	for str05FileName in `find . -type f -name "*.mkv" | sort` 
 	do
@@ -1788,10 +1861,11 @@ other-transcode_commands() {
 		
 		if [ "$strBatchMode" = "On" ]
 		then
-			# BatchMode is ACTIVE
-			dirWinWorkDir="F:"
+		
+			# BatchMode is ACTIVE		
+			dirWinWorkDir="G:\Movies"
 			strWinFile="${dirWinWorkDir}\\${str05File}"
-			strBatchOverrideLocation="${dirMediaDir}/Transcoding/Overrides"
+			strBatchOverrideLocation="$dirDropboxBatchOverridesDir"
 		else
 			strWinFile="${dirWinWorkDir}\\04_ReadyForTranscoding\\${str05File}"
 
@@ -1946,29 +2020,31 @@ other-transcode_commands() {
 		
 			if [[ "$str05X264AVBRActive" = "true" ]]
 				then
-				arrHwTranscodeRbCommand=(other-transcode \"${strMacFile}\" --x264-avbr --crop auto )
+				arrHwTranscodeRbCommand=(beta_other-transcode \"${strMacFile}\" --x264-avbr --crop auto )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
-			 	arrHwTranscodeRbCommand=(other-transcode \"${strMacFile}\" --copy-video )
+			 	arrHwTranscodeRbCommand=(beta_other-transcode \"${strMacFile}\" --copy-video )
 			else
-				arrHwTranscodeRbCommand=(other-transcode \"${strMacFile}\" --vt --hevc ) 
+				arrHwTranscodeRbCommand=(beta_other-transcode \"${strMacFile}\" --vt --hevc ) 
 			fi
 		
    		else 
 			if [[ "$str05X264AVBRActive" = "true" ]]
 				then
-				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --x264-avbr --crop auto )
+				arrHwTranscodeRbCommand=(call beta_other-transcode \"${strWinFile}\" --x264-avbr --crop auto )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
-			 	arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --copy-video )
+			 	arrHwTranscodeRbCommand=(call beta_other-transcode \"${strWinFile}\" --copy-video )
 			elif [[ "$str05UseQSV" = "true" ]]
 				then
-				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
+				arrHwTranscodeRbCommand=(call beta_other-transcode \"${strWinFile}\" --qsv --hevc )
 			else
 				# arrHwTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
-				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
+#				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
+				arrHwTranscodeRbCommand=(call beta_other-transcode \"${strWinFile}\" --hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32)
+
 			fi			
 		fi
 
@@ -2048,15 +2124,15 @@ other-transcode_commands() {
 				
 					
 				*)
-					echo "*********************************************************************************"
+					echo "*******************************************************************************************"
 					echo "WARNING:    "
 					echo ""
 					echo "$FILE"
 					echo ""
-					echo "The Default audio track is neither FLAC, EAC3, AC-3, DTS, TrueHD nor PSM_S16LE"
+					echo "The Default audio track is neither FLAC, EAC3, AC-3, DTS, TrueHD, PCM_S16LE nor PCM_S24LE"
 					echo ""
 					echo "Please check ... exiting now"
-					echo "*********************************************************************************"
+					echo "*******************************************************************************************"
 					exit 1		
 				;;
 			esac
@@ -2103,16 +2179,19 @@ other-transcode_commands() {
 			pcm_s16le)
 				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
 				;;
+			pcm_s24le)
+				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
+				;;	
 			*)
-				echo "*********************************************************************************"
+				echo "*******************************************************************************************"
 				echo "WARNING:    "
 				echo ""
 				echo "$FILE"
 				echo ""
-				echo "The Default audio track is neither FLAC, EAC3, AC-3, DTS, TrueHD nor PSM_S16LE"
+				echo "The Default audio track is neither FLAC, EAC3, AC-3, DTS, TrueHD, PSM_S16LE nor PCM_S24LE"
 				echo ""
 				echo "Please check ... exiting now"
-				echo "*********************************************************************************"
+				echo "*******************************************************************************************"
 				exit 1		
 				;;
 		esac
@@ -2128,7 +2207,7 @@ other-transcode_commands() {
 		
 		case $str05DefaultAudioTrackCodec in
 		
-			flac|eac3|ac3|dts|truehd|pcm_s16le)
+			flac|eac3|ac3|dts|truehd|pcm_s16le|pcm_s24le)
 #				if [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
 				if [ "$str05DefaultAudioTrackChannels" = "1" ]
 				then
@@ -2181,19 +2260,19 @@ other-transcode_commands() {
 				case $str05DefaultAudioTrackCommentaryChannelLayout in
 			
 					"4.0"|"5.0(side)"|"5.1(side)"|"6.1"|"7.1") 
-						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=surround )
+						arrHwTranscodeRbCommand+=(--add-audio Commentary=surround )
 						;;
 
 					"3.0"|stereo)
-						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\"=stereo )
+						arrHwTranscodeRbCommand+=(--add-audio Commentary=stereo )
 						;;
 
 					mono)
-						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
+						arrHwTranscodeRbCommand+=(--add-audio Commentary )
 						;;
 
 					*)	
-						arrHwTranscodeRbCommand+=(--add-audio \"Commentary\" )
+						arrHwTranscodeRbCommand+=(--add-audio Commentary )
 						;;	
 				esac	
 			fi
@@ -2203,19 +2282,19 @@ other-transcode_commands() {
 				case $str05DefaultAudioTrackADChannelLayout in
 		
 					"4.0"|"5.0(side)"|"5.1(side)"|"6.1"|"7.1") 
-						arrHwTranscodeRbCommand+=(--add-audio \"AD\"=surround )
+						arrHwTranscodeRbCommand+=(--add-audio AD=surround )
 						;;
 				
 					"3.0"|stereo)
-						arrHwTranscodeRbCommand+=(--add-audio \"AD\"=stereo )
+						arrHwTranscodeRbCommand+=(--add-audio AD=stereo )
 						;;
 				
 					mono)
-						arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
+						arrHwTranscodeRbCommand+=(--add-audio AD )
 						;;
 				
 					*)	
-						arrHwTranscodeRbCommand+=(--add-audio \"AD\" )
+						arrHwTranscodeRbCommand+=(--add-audio AD )
 						;;	
 				esac	
 			fi
@@ -2244,7 +2323,7 @@ other-transcode_commands() {
 		else
 				if [ "$str05SubtitleForcedPresence" -eq "1" ]
 				then
-					arrHwTranscodeRbCommand+=(--add-subtitle \"Forced\")
+					arrHwTranscodeRbCommand+=(--add-subtitle auto)
 				fi
 		fi	
 
@@ -2269,17 +2348,17 @@ other-transcode_commands() {
 			eng)
 				if [ "$str05SubtitleEnglishPresence" -eq "1" ]
 				then
-					arrHwTranscodeRbCommand+=(--add-subtitle \"English\")
+					arrHwTranscodeRbCommand+=(--add-subtitle English)
 				fi
 				
 				if [ "$str05SubtitleSDHPresence" -eq 1 ]
 				then
-					arrHwTranscodeRbCommand+=(--add-subtitle \"SDH\")
+					arrHwTranscodeRbCommand+=(--add-subtitle SDH)
 				fi
 				
 				if [ "$str05SubtitleCommentaryPresence" -ge 1 ]
 				then
-					arrHwTranscodeRbCommand+=(--add-subtitle \"Commentary\")
+					arrHwTranscodeRbCommand+=(--add-subtitle Commentary)
 				fi
 				;;
 			*)
@@ -2287,22 +2366,22 @@ other-transcode_commands() {
 				then
 					if [ "$str05SubtitleCommentaryPresence" -ge 1 ]
 					then
-						arrHwTranscodeRbCommand+=(--add-subtitle \"Commentary\")
+						arrHwTranscodeRbCommand+=(--add-subtitle Commentary)
 					fi
 				else
 					if [ "$str05SubtitleEnglishPresence" -eq "1" ]
 					then
-						arrHwTranscodeRbCommand+=(--add-subtitle \"English\")
+						arrHwTranscodeRbCommand+=(--add-subtitle English)
 					fi
 				
 					if [ "$str05SubtitleSDHPresence" -eq 1 ]
 					then
-						arrHwTranscodeRbCommand+=(--add-subtitle \"SDH\")
+						arrHwTranscodeRbCommand+=(--add-subtitle SDH)
 					fi
 				
 					if [ "$str05SubtitleCommentaryPresence" -ge 1 ]
 					then
-						arrHwTranscodeRbCommand+=(--add-subtitle \"Commentary\")
+						arrHwTranscodeRbCommand+=(--add-subtitle Commentary)
 					fi
 				fi
 				;;
@@ -2396,11 +2475,15 @@ other-transcode_commands() {
   		unset str05UseQSV
   		unset str05UseVideoToolBox
 		
-  		  		
-  		if [ -f ${dirProcessing}/$str05FileName ]
-		then
-			mv ${dirProcessing}/$str05FileName ${dirReadyForTranscoding}/${str05File}
-		fi
+        # When batch mode is on, no file moves should be made
+        
+        if [ "$strBatchMode" != "On" ]
+		then  		  		
+  			if [ -f ${dirProcessing}/$str05FileName ]
+			then
+				mv ${dirProcessing}/$str05FileName ${dirReadyForTranscoding}/${str05File}
+			fi
+  		fi
   		  				
 	    read line </dev/null
 	done
@@ -2743,15 +2826,16 @@ Please select one of the following:
   3. /mnt/m
   4. /mnt/e/_MEDIA_FOR_NAS
   5. ARCHIVE Copies
+  6. Do not copy files - leave in-situ
   0. Quit
 	
 ===============================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-5] > "
+	  read -p "Enter selection [0-6] > "
 
-  		if [[ $REPLY =~ ^[0-5]$ ]]; then
+  		if [[ $REPLY =~ ^[0-6]$ ]]; then
     	case $REPLY in
      	1)
            	dirMediaDir="/Volumes/Media/_New"
@@ -2772,7 +2856,11 @@ _EOF_
         5) 
         	dirMediaDir="ARCHIVE"
         	break
-        	;;  	
+        	;; 
+        6)
+        	dirMediaDir="LEAVE"
+        	break
+        	;;	 	
         0)
         	exit
         	;;	
@@ -2818,7 +2906,7 @@ Raw Original MKV Directory
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/4TB/Engine_Room-TEST/04_ReadyForTranscoding
+  1. /Volumes/3TB/Engine_Room-TEST/04_ReadyForTranscoding
   2. /mnt/e/Engine_Room-TEST/04_ReadyForTranscoding
   0. Quit
 	
@@ -2831,7 +2919,7 @@ _EOF_
   	if [[ $REPLY =~ ^[0-2]$ ]]; then
     	case $REPLY in
      	1)
-           	dirReadyForTranscoding="/Volumes/4TB/Engine_Room-TEST/04_ReadyForTranscoding"
+           	dirReadyForTranscoding="/Volumes/3TB/Engine_Room-TEST/04_ReadyForTranscoding"
           	break
           	;;
       	2)
@@ -2870,7 +2958,7 @@ Transcoded Output Directory Set-up
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/4TB/Engine_Room-TEST/05_Transcoded
+  1. /Volumes/3TB/Engine_Room-TEST/05_Transcoded
   2. /home/parallels/Desktop/Engine_Room-TEST/05_Transcoded
   3. /mnt/d/05_Transcoded
   0. Quit
@@ -2884,7 +2972,7 @@ _EOF_
   	if [[ $REPLY =~ ^[0-3]$ ]]; then
     	case $REPLY in
      	1)
-           	dirTranscodedWorkDir="/Volumes/4TB/Engine_Room-TEST/05_Transcoded"
+           	dirTranscodedWorkDir="/Volumes/3TB/Engine_Room-TEST/05_Transcoded"
           	break
           	;;
       	2)
@@ -2935,7 +3023,7 @@ Plex Location Set-up
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/4TB/Engine_Room-TEST/Pretend_Plex
+  1. /Volumes/3TB/Engine_Room-TEST/Pretend_Plex
   2. /mnt/e/Engine_Room-TEST/Pretend_Plex
   0. Quit
 	
@@ -2948,7 +3036,7 @@ _EOF_
   	if [[ $REPLY =~ ^[0-2]$ ]]; then
     	case $REPLY in
      	1)
-           	dirPlexDir="/Volumes/4TB/Engine_Room-TEST/Pretend_Plex"
+           	dirPlexDir="/Volumes/3TB/Engine_Room-TEST/Pretend_Plex"
           	break
           	;;
       	2)
@@ -2986,7 +3074,7 @@ Dropbox Logs Set-up
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/4TB/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output
+  1. /Volumes/3TB/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output
   2. /mnt/e/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output
   0. Quit
 	
@@ -2999,7 +3087,7 @@ _EOF_
   		if [[ $REPLY =~ ^[0-2]$ ]]; then
     	case $REPLY in
      	1)
-           	dirDropboxLogsDir="/Volumes/4TB/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output"
+           	dirDropboxLogsDir="/Volumes/3TB/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output"
           	break
           	;;
       	2)
@@ -3036,21 +3124,23 @@ Media Set-up
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/4TB/Engine_Room-TEST/Pretend_Media
+  1. /Volumes/3TB/Engine_Room-TEST/Pretend_Media
   2. /mnt/e/Engine_Room-TEST/Pretend_Media_for_NAS
-  3. ARCHIVE Copies
+  3. ARCHIVE Copies (Mac)
+  4. ARCHIVE Copies (Win)
+  5. Do not copy files - leave in-situ
   0. Quit
 	
 ===============================================================================
 
 _EOF_
 
-  	read -p "Enter selection [0-4] > "
+  	read -p "Enter selection [0-5] > "
 
-  	if [[ $REPLY =~ ^[0-4]$ ]]; then
+  	if [[ $REPLY =~ ^[0-5]$ ]]; then
     	case $REPLY in
      	1)
-           	dirMediaDir="/Volumes/4TB/Engine_Room-TEST/Pretend_Media"
+           	dirMediaDir="/Volumes/3TB/Engine_Room-TEST/Pretend_Media"
           	break
           	;;
       	2)
@@ -3064,7 +3154,11 @@ _EOF_
         4)
          	dirMediaDir="Pretend_ARCHIVE_Win"
         	break
-        	;;         	
+        	;;     
+        5)
+        	dirMediaDir="LEAVE"
+        	break
+        	;;	    	
         0)
         	exit
         	;;	
@@ -3290,10 +3384,6 @@ create_folder_and_move() {
 			# Determine the Season number
 			#strTVShowSeasonNo=$( echo "$strP02FileName" | sed 's/.*\ -\ S//g' | cut -c1-2 | sed 's/^0*//g' )
 			strTVShowSeasonNo=$( echo "$strP02FileName" | cut -d"-" -f2 | sed 's/.*\ S//g' | cut -c1-2 | sed 's/^0//g' )
-			
-			echo "strP02FileName:  $strP02FileName"
-			echo "strTVShowSeasonNo:  $strTVShowSeasonNo"
-			sleep 3
 
 			if [ ! -d ${dirTranscodedWorkDir}/${strTVShowName} ]
 			then
@@ -3569,40 +3659,50 @@ copy_transcoded_log_to_media() {
 
 copy_transcoded_content_to_plex() {
 
-	echo "*******************************************************************************"
-	echo "Starting Step 6 - Copy transcoded content to Plex" 
-	echo ""
-	echo ""
-
-	IFS=$'\n'
-	
-	# Source Directory
-	dirSourceTranscodedContent="$dirTranscodedWorkDir"
-	
-	# Destination Directory
-	dirDestinationPlex="$dirPlexDir/_New"
-	
-	cd $dirSourceTranscodedContent
-
-	echo "About to begin copying transcoded MKVs to the Plex folder on the NAS ..."
-	echo "Command:"
-	echo "cp -rv -i $dirSourceTranscodedContent/* $dirDestinationPlex"	
-			
-	if cp -rv -i $dirSourceTranscodedContent/* $dirDestinationPlex
+	if [[ $dirMediaDir != "LEAVE" ]]
 	then
-		echo "Copy successful"
-		rm -rv $dirSourceTranscodedContent/*
-		rm $dirDestinationPlex/commands.bat
+
+		echo "*******************************************************************************"
+		echo "Starting Step 6 - Copy transcoded content to Plex" 
+		echo ""
+		echo ""
+		
+		IFS=$'\n'
+		
+		# Source Directory
+		dirSourceTranscodedContent="$dirTranscodedWorkDir"
+		
+		# Destination Directory
+		dirDestinationPlex="$dirPlexDir/_New"
+		
+		cd $dirSourceTranscodedContent
+		
+		echo "About to begin copying transcoded MKVs to the Plex folder on the NAS ..."
+		echo "Command:"
+		echo "cp -rv -i $dirSourceTranscodedContent/* $dirDestinationPlex"	
+				
+		if cp -rv -i $dirSourceTranscodedContent/* $dirDestinationPlex
+		then
+			echo "Copy successful"
+			rm -rv $dirSourceTranscodedContent/*
+			rm $dirDestinationPlex/commands.bat
+		else
+			echo "Copy failure, exit status $?"
+			exit
+		fi		
+		
+		
+		echo " "
+		echo "Step 6 complete" 
+		echo "*******************************************************************************"	
+
 	else
-		echo "Copy failure, exit status $?"
-		exit
-	fi		
-
-
-	echo " "
-	echo "Step 6 complete" 
-	echo "*******************************************************************************"	
-
+		echo "*******************************************************************************"
+		echo "Starting Step 6 - Copy transcoded content to Plex" 
+		echo ""
+		echo "---- DISABLED ----"
+		echo ""
+	fi	
 
 }
 
@@ -3630,13 +3730,21 @@ copy_raw_content_to_media() {
 	cd $dirSourceRawMKVContent
 
 	case $dirDestinationRawMKVContent in
+		LEAVE)
+			echo "All raw and transcoded MKV files will remain in-situ."
+			echo "No copying will take place."
+			echo "Copies need to be manually transferred"
+			;;
+			
 		ARCHIVE)
 			dirDestinationRawMKVContent1="/mnt/g/_New"
 			dirDestinationRawMKVContent2="/mnt/h/_New"
+			dirDestinationRawMKVContent3="/mnt/e/_MEDIA_FOR_NAS"
+
 
 			echo "About to begin copying raw MKVs to the ext HDD Archive Folders' holding area ..."
 			echo "Command:"
-			echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
+			echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent1/"	
 		
 			if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent1/
 			then
@@ -3646,6 +3754,11 @@ copy_raw_content_to_media() {
 				exit
 			fi
 	
+			echo "About to begin copying raw MKVs to the ext HDD Archive Folders' holding area ..."
+			echo "Command:"
+			echo "cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent2/"	
+	
+	
 			if cp -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent2/
 			then
 				echo "Copy 2 successful"
@@ -3654,6 +3767,19 @@ copy_raw_content_to_media() {
 				echo "Copy failure, exit status $?"
 				exit
 			fi
+			
+			echo "About to begin moving raw MKVs to the NAS holding area ..."
+			echo "Command:"
+			echo "mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent3/"	
+						
+			if mv -v -i ${dirSourceRawMKVContent}/* ${dirDestinationRawMKVContent3}/
+			then
+				echo "Move successful"
+			else
+				echo "Move failure, exit status $?"
+				exit
+			fi			
+		
 			;;
 			
 		Pretend_ARCHIVE_Win)
@@ -3682,8 +3808,8 @@ copy_raw_content_to_media() {
 			;;
 			
 		Pretend_ARCHIVE_Mac)
-			dirDestinationRawMKVContent1="/Volumes/4TB/Engine_Room-TEST/Pretend_Archive-1/_New"
-			dirDestinationRawMKVContent2="/Volumes/4TB/Engine_Room-TEST/Pretend_Archive-2/_New"
+			dirDestinationRawMKVContent1="/Volumes/3TB/Engine_Room-TEST/Pretend_Archive-1/_New"
+			dirDestinationRawMKVContent2="/Volumes/3TB/Engine_Room-TEST/Pretend_Archive-2/_New"
 
 			echo "About to begin copying raw MKVs to the ext HDD Archive Folders' holding area ..."
 			echo "Command:"
@@ -3706,12 +3832,12 @@ copy_raw_content_to_media() {
 			fi			
 			;;
 			
-		"/mnt/e/_MEDIA_FOR_NAS"|"/Volumes/4TB/Engine_Room-TEST/Pretend_Media")
+		"/mnt/e/_MEDIA_FOR_NAS"|"/Volumes/3TB/Engine_Room-TEST/Pretend_Media")
 			echo "About to begin moving raw MKVs to the _MEDIA_FOR_NAS folder ..."
 			echo "Command:"
-			echo "mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/_New/"	
+			echo "mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/"	
 		
-			if mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/_New/
+			if mv -v -i $dirSourceRawMKVContent/* $dirDestinationRawMKVContent/
 			then
 				echo "Move successful"
 			else

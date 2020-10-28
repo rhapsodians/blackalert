@@ -4,7 +4,6 @@
 _28 October 2020_
 
 
-
 ## 0.32 ##
 _28 October 2020_
 - Minor path typos for folder naming function
@@ -32,6 +31,7 @@ _28 August 2020_
 - 4K/HDR - check to ensure `--deinterlace` is not included due to the lack `.streams[0].field_order` not being set for 2160p content
 - If you choose to active "- Disable forced subtitle burn-in" in the menu choices, the Forced subsitle stream is now embedded automatically (usually, it's excluded).
 - New 3.5" HDD archive for raw content: two new drives will be added for archiving. These will be exFAT-formatted drives for on-site/off-site archives. Once post-transcoding clean-up starts, the raw source will be copied to each drive.
+
 
 ## 0.30 ##
 _17 July 2020_
