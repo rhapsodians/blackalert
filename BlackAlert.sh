@@ -1790,6 +1790,67 @@ other-transcode_commands() {
 	echo "Location:   $dirOutboxCommands"
 	echo "-------------------------------------------------------------------------------"
 	echo "Building the other-transcode command for:"
+
+
+
+	if [ "$strBatchMode" = "On" ]
+	then
+		
+		# BatchMode is ACTIVE
+
+		while true; do
+		cat << _EOF_
+
+
+
+-------------------------------------------------------------------------------
+Dropbox Override Set-up
+-------------------------------------------------------------------------------
+
+Please select one of the following:
+===============================================================================
+
+  1. /Users/joe/Dropbox/Transcoding_Output/Overrides
+  2. /mnt/c/Users/Joe/Dropbox/Transcoding_Output/Overrides
+  0. Quit
+	
+===============================================================================
+
+_EOF_
+
+	  read -p "Enter selection [0-2] > "
+
+  		if [[ $REPLY =~ ^[0-2]$ ]]; then
+    	case $REPLY in
+     	1)
+           	dirDropboxBatchOverridesDir="/Users/joe/Dropbox/Transcoding_Output/Overrides"
+          	break
+          	;;
+      	2)
+      	  	dirDropboxBatchOverridesDir="/mnt/c/Users/Joe/Dropbox/Transcoding_Output/Overrides"
+          	break
+          	;;
+        0)
+        	exit
+        	;;	
+    	esac
+  	else
+    	echo "Invalid entry."
+    	sleep $DELAY
+  	fi
+	done
+
+	echo ""
+	echo ""
+	echo "Dropbox Overrides Directory:  	$dirDropboxBatchOverridesDir"
+	echo "-------------------------------------------------------------------------------"
+	echo ""
+	echo ""
+	echo ""
+
+	fi
+
+
 	 
 	for str05FileName in `find . -type f -name "*.mkv" | sort` 
 	do
@@ -1800,10 +1861,11 @@ other-transcode_commands() {
 		
 		if [ "$strBatchMode" = "On" ]
 		then
-			# BatchMode is ACTIVE
-			dirWinWorkDir="F:"
+		
+			# BatchMode is ACTIVE		
+			dirWinWorkDir="G:\Movies"
 			strWinFile="${dirWinWorkDir}\\${str05File}"
-			strBatchOverrideLocation="${dirMediaDir}/Transcoding/Overrides"
+			strBatchOverrideLocation="$dirDropboxBatchOverridesDir"
 		else
 			strWinFile="${dirWinWorkDir}\\04_ReadyForTranscoding\\${str05File}"
 
@@ -2413,11 +2475,15 @@ other-transcode_commands() {
   		unset str05UseQSV
   		unset str05UseVideoToolBox
 		
-  		  		
-  		if [ -f ${dirProcessing}/$str05FileName ]
-		then
-			mv ${dirProcessing}/$str05FileName ${dirReadyForTranscoding}/${str05File}
-		fi
+        # When batch mode is on, no file moves should be made
+        
+        if [ "$strBatchMode" != "On" ]
+		then  		  		
+  			if [ -f ${dirProcessing}/$str05FileName ]
+			then
+				mv ${dirProcessing}/$str05FileName ${dirReadyForTranscoding}/${str05File}
+			fi
+  		fi
   		  				
 	    read line </dev/null
 	done
