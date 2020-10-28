@@ -1,5 +1,21 @@
 # Change Log #
 
+## 0.32 ##
+_28 October 2020_
+- Minor path typos for folder naming function
+- Removed sleep in folder naming function
+- Changed Mac test HD from "4TB" to "3TB" after drive failure.
+- Added "pretend" checks/creation when run in test mode to standardise build-out
+- `mv` command was failing ... added double quotes
+- For 4K forced-subtitling, changed `--add-subtitle "Forced"` to `--add-subtitle auto` so that the default subtitle and forced flags were auto-set.
+- Removed quotes from `--add-audio` and `--add-subtitle` strings to ensure both `call` commands and those run on the CLI act in the same way. Quotes lead to `--add-audio "AD"=surround` being processed as surround within a `call` command but as stereo (incorrectly) if run from the commandline.
+- Added in logic to handle `pcm_s24le` audio tracks
+- Temporary usage of `beta_other-transcode` and using the `--preset p5 --nvenc-lookahead 32 --nvenc-spatial-aq` default.
+- Updated locations with `beta_other-transcode` instead of `other-transcode`
+- Added an option not to copy raw and transcoded mkv files to the targets - due to IO bug in WSL2
+- Added override file functionality from Dropbox into the batch processing
+
+
 ## 0.31 ##
 _28 August 2020_
 - WSL mount bug fixes
@@ -11,6 +27,7 @@ _28 August 2020_
 - 4K/HDR - check to ensure `--deinterlace` is not included due to the lack `.streams[0].field_order` not being set for 2160p content
 - If you choose to active "- Disable forced subtitle burn-in" in the menu choices, the Forced subsitle stream is now embedded automatically (usually, it's excluded).
 - New 3.5" HDD archive for raw content: two new drives will be added for archiving. These will be exFAT-formatted drives for on-site/off-site archives. Once post-transcoding clean-up starts, the raw source will be copied to each drive.
+
 
 ## 0.30 ##
 _17 July 2020_
