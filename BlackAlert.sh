@@ -2020,30 +2020,30 @@ _EOF_
 		
 			if [[ "$str05X264AVBRActive" = "true" ]]
 				then
-				arrHwTranscodeRbCommand=(beta_other-transcode \"${strMacFile}\" --x264-avbr --crop auto )
+				arrHwTranscodeRbCommand=(other-transcode \"${strMacFile}\" --x264-avbr --crop auto )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
-			 	arrHwTranscodeRbCommand=(beta_other-transcode \"${strMacFile}\" --copy-video )
+			 	arrHwTranscodeRbCommand=(other-transcode \"${strMacFile}\" --copy-video )
 			else
-				arrHwTranscodeRbCommand=(beta_other-transcode \"${strMacFile}\" --vt --hevc ) 
+				arrHwTranscodeRbCommand=(other-transcode \"${strMacFile}\" --vt --hevc ) 
 			fi
 		
    		else 
 			if [[ "$str05X264AVBRActive" = "true" ]]
 				then
-				arrHwTranscodeRbCommand=(call beta_other-transcode \"${strWinFile}\" --x264-avbr --crop auto )
+				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --x264-avbr --crop auto )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
-			 	arrHwTranscodeRbCommand=(call beta_other-transcode \"${strWinFile}\" --copy-video )
+			 	arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --copy-video )
 			elif [[ "$str05UseQSV" = "true" ]]
 				then
-				arrHwTranscodeRbCommand=(call beta_other-transcode \"${strWinFile}\" --qsv --hevc )
+				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
 			else
 				# arrHwTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
 #				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
-				arrHwTranscodeRbCommand=(call beta_other-transcode \"${strWinFile}\" --hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32)
+				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32)
 
 			fi			
 		fi

@@ -1,7 +1,8 @@
 # Change Log #
 
 ## 0.33 ##
-_28 October 2020_
+_2 November 2020_
+- Back to `other-transcode` as Don released 0.4.0 (with the Nvidia presets)
 
 
 ## 0.32 ##
