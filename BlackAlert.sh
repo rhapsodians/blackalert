@@ -571,7 +571,7 @@ Please select one of the following:
 	3. Rename or add a title to a SUBTITLE stream
 	4. Set audio default track
 	5. Set the forced-subtitle flag
-	6. Copy original video (no video transcoding)
+	6. QSV h/w transcoding (Windows)
 	7. AUDIO Options
 		- Copy the main audio track (no audio transcoding)
 		- Copy all audio tracks (no audio transcoding)
@@ -582,9 +582,9 @@ Please select one of the following:
 		- Stereo bitrate override
 		- Mono bitrate override		 		
 	8. MORE Options
+	    - Copy original video (no video transcoding)
 		- Create single/unified mkvpropedit script
 		- Use --x264-avbr software encoding
-		- QSV h/w transcoding (Windows)
 		- VideoToolbox h/w transcoding (Mac)
 		- Disable forced subtitle burn-in
 	9. Next
@@ -625,7 +625,7 @@ _EOF_
           	;;	
         6)
         	step4_ffprobe_tsv
-        	step4_copy_original_video
+        	step4_QSV
         	continue
           	;;
         7)
@@ -761,9 +761,9 @@ MORE OPTIONS
 
 Please select one of the following:
 
-	1. Create single/unified mkvpropedit script
-	2. Use --x264-avbr software encoding
-	3. QSV h/w transcoding (Windows)
+	1. Copy original video (no video transcoding)
+	2. Create single/unified mkvpropedit script
+	3. Use --x264-avbr software encoding
 	4. VideoToolbox h/w transcoding (Mac)
 	5. Disable forced subtitle burn-in	
 	6. Back
@@ -779,17 +779,17 @@ _EOF_
     	case $REPLY in
      	1)
            	step4_ffprobe_tsv
-      	  	step4_mkvpropedit_unfied_command
+           	step4_copy_original_video
           	continue
           	;;
       	2)
       	  	step4_ffprobe_tsv
-      	  	step4_usex264-avbr
+      	  	step4_mkvpropedit_unfied_command
           	continue
           	;;
         3)
       	  	step4_ffprobe_tsv
-      	  	step4_QSV
+      	  	step4_usex264-avbr
           	continue
           	;;
     	4)
@@ -2039,7 +2039,9 @@ _EOF_
 			 	arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --copy-video )
 			elif [[ "$str05UseQSV" = "true" ]]
 				then
-				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
+				#arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
+				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --qsv-decoder --preset veryslow )
+
 			else
 				# arrHwTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
 #				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )

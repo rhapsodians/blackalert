@@ -1,8 +1,10 @@
 # Change Log #
 
 ## 0.33 ##
-_2 November 2020_
+_27 November 2020_
 - Back to `other-transcode` as Don released 0.4.0 (with the Nvidia presets)
+- Changed QSV from HEVC to AVC defaults (`--qsv --qsv-decode --preset veryslow`)
+- Promoted QSV to the main menu and moved CopyVideo to the submenu
 
 
 ## 0.32 ##
