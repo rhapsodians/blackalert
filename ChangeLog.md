@@ -1,10 +1,13 @@
 # Change Log #
 
 ## 0.33 ##
-_27 November 2020_
+_28 November 2020_
 - Back to `other-transcode` as Don released 0.4.0 (with the Nvidia presets)
 - Changed QSV from HEVC to AVC defaults (`--qsv --qsv-decode --preset veryslow`)
 - Promoted QSV to the main menu and moved CopyVideo to the submenu
+- Added automatic codec folder generation/sorting in post processing (e.g. HEVC content -> HEVC folder, QSV content -> QSV folder)
+- QSV now the default for all VC-1 content
+- Replaced the older `arrHwTranscodeRbCommand` variable with `arrOtherTranscodeRbCommand`
 
 
 ## 0.32 ##
