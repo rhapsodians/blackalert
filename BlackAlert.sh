@@ -2045,7 +2045,7 @@ _EOF_
 			else
 				if [[ "$str05DefaultVideoCodec" = "vc1" ]]
 				then
-					arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --qsv-decoder --preset veryslow)
+					arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --qsv-decoder --decode all --preset veryslow)
 				else
 					# arrOtherTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
 					# arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
@@ -3651,14 +3651,52 @@ copy_transcoded_log_to_media() {
 	# Source Directory
 	dirSourceTranscodedLog="$dirTranscodedWorkDir"
 	
-	# Destination Directory
-	dirDestinationTranscodedLog="$dirDropboxLogsDir/Logs"
+	# Destination commands folder 
+	dirDestinationCommands="$dirDropboxLogsDir/Commands"
 	
 	cd $dirSourceTranscodedLog
 			
 	for strP05LogName in `find . -type f -name "*.mkv.log" | sort`
 	do
 		strP05LogName=${strP05LogName/\.\//}
+		strP05FileNameNoMKVLOG=$( echo $strP05LogName | sed 's/\.mkv\.log//g')
+        strP05RawVideoCodecName=$( awk -F' --' '{print $2}' $dirDestinationCommands/${strP05FileNameNoMKVLOG}.other-transcode.command.txt )
+
+		case $strP05RawVideoCodecName in
+			copy-video)
+				dirP05LogDir="Logs"
+				shift
+				;;
+			hevc)
+				dirP05LogDir="Logs"
+				shift
+				;;
+			qsv)
+				dirP05LogDir="Logs (QSV)"
+				shift
+				;;	
+			x264-avbr)
+				dirP05LogDir="Logs (x264-avbr)"
+				shift
+				;;
+			vt)
+				dirP05LogDir="VT"
+				shift
+				;;			
+			*)
+				dirP05LogDir="Logs"
+				shift
+				;;
+		esac
+		
+		# Destination Directory
+		dirDestinationTranscodedLog="${dirDropboxLogsDir}/${dirP05LogDir}"
+		
+		
+		if [ ! -d $dirDestinationTranscodedLog ]
+		then
+			mkdir $dirDestinationTranscodedLog
+		fi
 
 		if [ ! -f $dirDestinationTranscodedLog/$strP05LogName ]
 			then
@@ -4046,5 +4084,3 @@ case $strRunMode in
 			exit
 			;;		
 esac					
-
-
