@@ -1,14 +1,17 @@
 # Change Log #
 
 ## 0.33 ##
-_1 December 2020_
-- Back to `other-transcode` as Don released 0.4.0 (with the Nvidia presets)
+_12 December 2020_
+- Back to `other-transcode` as Don released 0.4.0 and 0.5.0 (with the Nvidia presets)
 - Changed QSV from HEVC to AVC defaults (`--qsv --qsv-decode --preset veryslow`)
 - Promoted QSV to the main menu and moved CopyVideo to the submenu
 - Added automatic codec folder generation/sorting in post processing (e.g. HEVC content -> HEVC folder, QSV content -> QSV folder)
 - QSV now the default for all VC-1 content
 - Replaced the older `arrHwTranscodeRbCommand` variable with `arrOtherTranscodeRbCommand`
 - Added encoder-specific logs location separation. For example:  QSV content -> Dropbox's "Logs (QSV)" folder whereas HEVC goes to "Logs"
+- Fixed bug where mono/stereo/2.1 DTS-HD MA (and other high quality) tracks were using AAC instead of EAC3 (`--all-eac3` was not being added).
+- Added `--rc-bufsize 4` to the HEVC defaults ... Don uses 3 but Nvidia recommend 4 - in for testing purposes for now.
+- Added `--max-muxing-queue-size 1024` to the defaults
 
 
 ## 0.32 ##
@@ -35,7 +38,7 @@ _28 August 2020_
 - Added in a test move (`mv`) location
 - Add pcm_s24le as a valid audio codec for mono - used for "It Happened One Night (1934)"
 - Post-processing: if the raw source target is the same "E" drive as ready-for-transcoding, swap the copy to a move.
-- 4K/HDR - check to ensure `--deinterlace` is not included due to the lack `.streams[0].field_order` not being set for 2160p content
+- 4K/HDR - check to ensure `--deinterlace` is not included due to the lack  .streams[0].field_order not being set for 2160p content
 - If you choose to active "- Disable forced subtitle burn-in" in the menu choices, the Forced subsitle stream is now embedded automatically (usually, it's excluded).
 - New 3.5" HDD archive for raw content: two new drives will be added for archiving. These will be exFAT-formatted drives for on-site/off-site archives. Once post-transcoding clean-up starts, the raw source will be copied to each drive.
 

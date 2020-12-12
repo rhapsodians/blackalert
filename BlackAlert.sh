@@ -2026,30 +2026,30 @@ _EOF_
 			 	then
 			 	arrOtherTranscodeRbCommand=(other-transcode \"${strMacFile}\" --copy-video )
 			else
-				arrOtherTranscodeRbCommand=(other-transcode \"${strMacFile}\" --vt --hevc ) 
+				arrOtherTranscodeRbCommand=(other-transcode \"${strMacFile}\" --vt --hevc --max-muxing-queue-size 1024 ) 
 			fi
 		
    		else 
 			if [[ "$str05X264AVBRActive" = "true" ]]
 				then
-				arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --x264-avbr --crop auto )
+				arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --x264-avbr --crop auto --max-muxing-queue-size 1024 )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
-			 	arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --copy-video )
+			 	arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --copy-video --max-muxing-queue-size 1024 )
 			elif [[ "$str05UseQSV" = "true" ]]
 				then
 				#arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
-				arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --qsv-decoder --preset veryslow )
+				arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --qsv-decoder --preset veryslow --max-muxing-queue-size 1024 )
 
 			else
 				if [[ "$str05DefaultVideoCodec" = "vc1" ]]
 				then
-					arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --qsv-decoder --decode all --preset veryslow)
+					arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --qsv-decoder --decode all --preset veryslow --max-muxing-queue-size 1024 )
 				else
 					# arrOtherTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
 					# arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
-					arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32)
+					arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32 --rc-bufsize 4 --max-muxing-queue-size 1024 )
 				fi
 			fi		
 		fi
@@ -2144,15 +2144,22 @@ _EOF_
 			esac
 			
 #		elif [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
-		elif [ "$str05DefaultAudioTrackChannels" = "1" ] || [ "$str05DefaultAudioTrackChannels" = "2" ] || [ "$str05DefaultAudioTrackChannels" = "3" ]
-
-			then
-				arrOtherTranscodeRbCommand+=()
-		else
-				arrOtherTranscodeRbCommand+=(--all-eac3)	
+#		elif [ "$str05DefaultAudioTrackChannels" = "1" ] || [ "$str05DefaultAudioTrackChannels" = "2" ] || [ "$str05DefaultAudioTrackChannels" = "3" ]
+#		then
+		else		
+			case $str05DefaultAudioTrackCodec in
+				flac | dts| truehd | pcm_s16le | pcm_s24le)
+					arrOtherTranscodeRbCommand+=(--all-eac3)
+					;;
+				ac3 | eac3 | aac)
+					arrOtherTranscodeRbCommand+=()
+					;;				
+				*)
+					arrOtherTranscodeRbCommand+=()		
+				;;
+			esac
 		fi
 		
-	
 		
 		
 		# Main Audio Settings
