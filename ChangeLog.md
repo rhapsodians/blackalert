@@ -10,7 +10,7 @@ _12 December 2020_
 - Replaced the older `arrHwTranscodeRbCommand` variable with `arrOtherTranscodeRbCommand`
 - Added encoder-specific logs location separation. For example:  QSV content -> Dropbox's "Logs (QSV)" folder whereas HEVC goes to "Logs"
 - Fixed bug where mono/stereo/2.1 DTS-HD MA (and other high quality) tracks were using AAC instead of EAC3 (`--all-eac3` was not being added).
-- Added `--rc-bufsize 4` to the HEVC defaults ... Don uses 3 but Nvidia recommend 4 - in for testing purposes for now.
+- Added `--rc-bufsize 3` to the HEVC defaults
 - Added `--max-muxing-queue-size 1024` to the defaults
 
 

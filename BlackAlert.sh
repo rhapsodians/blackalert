@@ -2049,7 +2049,7 @@ _EOF_
 				else
 					# arrOtherTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
 					# arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
-					arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32 --rc-bufsize 4 --max-muxing-queue-size 1024 )
+					arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32 --rc-bufsize 3 --max-muxing-queue-size 1024 )
 				fi
 			fi		
 		fi
