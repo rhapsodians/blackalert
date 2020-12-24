@@ -2,7 +2,7 @@
 
 ###############################################################################
 # BlackAlert.sh                                                               #
-# Version 0.32                                                                #
+# Version 0.33                                                                #
 #                                                                             #
 # Copyright 2020 - Joe Hurley                                                 #
 #                                                                             #
@@ -22,7 +22,7 @@ DELAY=2
 
 echo "############################################################################################"
 echo "#                                                                                          #"
-echo "# BLACKALERT.SH (v0.32)                                                                    #"
+echo "# BLACKALERT.SH (v0.33)                                                                    #"
 echo "#                                                                                          #"
 echo "############################################################################################"
 
@@ -571,7 +571,7 @@ Please select one of the following:
 	3. Rename or add a title to a SUBTITLE stream
 	4. Set audio default track
 	5. Set the forced-subtitle flag
-	6. Copy original video (no video transcoding)
+	6. QSV h/w transcoding (Windows)
 	7. AUDIO Options
 		- Copy the main audio track (no audio transcoding)
 		- Copy all audio tracks (no audio transcoding)
@@ -582,9 +582,9 @@ Please select one of the following:
 		- Stereo bitrate override
 		- Mono bitrate override		 		
 	8. MORE Options
+		- Copy original video (no video transcoding)
 		- Create single/unified mkvpropedit script
 		- Use --x264-avbr software encoding
-		- QSV h/w transcoding (Windows)
 		- VideoToolbox h/w transcoding (Mac)
 		- Disable forced subtitle burn-in
 	9. Next
@@ -625,7 +625,7 @@ _EOF_
           	;;	
         6)
         	step4_ffprobe_tsv
-        	step4_copy_original_video
+        	step4_QSV
         	continue
           	;;
         7)
@@ -761,9 +761,9 @@ MORE OPTIONS
 
 Please select one of the following:
 
-	1. Create single/unified mkvpropedit script
-	2. Use --x264-avbr software encoding
-	3. QSV h/w transcoding (Windows)
+	1. Copy original video (no video transcoding)
+	2. Create single/unified mkvpropedit script
+	3. Use --x264-avbr software encoding
 	4. VideoToolbox h/w transcoding (Mac)
 	5. Disable forced subtitle burn-in	
 	6. Back
@@ -779,17 +779,17 @@ _EOF_
     	case $REPLY in
      	1)
            	step4_ffprobe_tsv
-      	  	step4_mkvpropedit_unfied_command
+           	step4_copy_original_video
           	continue
           	;;
       	2)
       	  	step4_ffprobe_tsv
-      	  	step4_usex264-avbr
+      	  	step4_mkvpropedit_unfied_command
           	continue
           	;;
         3)
       	  	step4_ffprobe_tsv
-      	  	step4_QSV
+      	  	step4_usex264-avbr
           	continue
           	;;
     	4)
@@ -2020,32 +2020,38 @@ _EOF_
 		
 			if [[ "$str05X264AVBRActive" = "true" ]]
 				then
-				arrHwTranscodeRbCommand=(beta_other-transcode \"${strMacFile}\" --x264-avbr --crop auto )
+				arrOtherTranscodeRbCommand=(other-transcode \"${strMacFile}\" --x264-avbr --crop auto )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
-			 	arrHwTranscodeRbCommand=(beta_other-transcode \"${strMacFile}\" --copy-video )
+			 	arrOtherTranscodeRbCommand=(other-transcode \"${strMacFile}\" --copy-video )
 			else
-				arrHwTranscodeRbCommand=(beta_other-transcode \"${strMacFile}\" --vt --hevc ) 
+				arrOtherTranscodeRbCommand=(other-transcode \"${strMacFile}\" --vt --hevc --max-muxing-queue-size 1024 ) 
 			fi
 		
    		else 
 			if [[ "$str05X264AVBRActive" = "true" ]]
 				then
-				arrHwTranscodeRbCommand=(call beta_other-transcode \"${strWinFile}\" --x264-avbr --crop auto )
+				arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --x264-avbr --crop auto --max-muxing-queue-size 1024 )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
-			 	arrHwTranscodeRbCommand=(call beta_other-transcode \"${strWinFile}\" --copy-video )
+			 	arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --copy-video --max-muxing-queue-size 1024 )
 			elif [[ "$str05UseQSV" = "true" ]]
 				then
-				arrHwTranscodeRbCommand=(call beta_other-transcode \"${strWinFile}\" --qsv --hevc )
-			else
-				# arrHwTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
-#				arrHwTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
-				arrHwTranscodeRbCommand=(call beta_other-transcode \"${strWinFile}\" --hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32)
+				#arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
+				arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --qsv-decoder --preset veryslow --max-muxing-queue-size 1024 )
 
-			fi			
+			else
+				if [[ "$str05DefaultVideoCodec" = "vc1" ]]
+				then
+					arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --qsv-decoder --decode all --preset veryslow --max-muxing-queue-size 1024 )
+				else
+					# arrOtherTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
+					# arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
+					arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32 --rc-bufsize 3 --max-muxing-queue-size 1024 )
+				fi
+			fi		
 		fi
 
 
@@ -2080,45 +2086,45 @@ _EOF_
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrHwTranscodeRbCommand+=(--eac3)
+						arrOtherTranscodeRbCommand+=(--eac3)
 					else
-						arrHwTranscodeRbCommand+=(--all-eac3)	
+						arrOtherTranscodeRbCommand+=(--all-eac3)	
 					fi	
 					;;
 				eac3)
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrHwTranscodeRbCommand+=()
+						arrOtherTranscodeRbCommand+=()
 					else
-						arrHwTranscodeRbCommand+=(--all-eac3)	
+						arrOtherTranscodeRbCommand+=(--all-eac3)	
 					fi	
 					;;				
 				pcm_s16le)
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrHwTranscodeRbCommand+=()
+						arrOtherTranscodeRbCommand+=()
 					else
-						arrHwTranscodeRbCommand+=()	
+						arrOtherTranscodeRbCommand+=()	
 					fi	
 					;;	
 				pcm_s24le)
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrHwTranscodeRbCommand+=()
+						arrOtherTranscodeRbCommand+=()
 					else
-						arrHwTranscodeRbCommand+=()	
+						arrOtherTranscodeRbCommand+=()	
 					fi	
 					;;	
 				aac)
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrHwTranscodeRbCommand+=()
+						arrOtherTranscodeRbCommand+=()
 					else
-						arrHwTranscodeRbCommand+=()	
+						arrOtherTranscodeRbCommand+=()	
 					fi	
 					;;	
 				
@@ -2138,15 +2144,22 @@ _EOF_
 			esac
 			
 #		elif [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
-		elif [ "$str05DefaultAudioTrackChannels" = "1" ] || [ "$str05DefaultAudioTrackChannels" = "2" ] || [ "$str05DefaultAudioTrackChannels" = "3" ]
-
-			then
-				arrHwTranscodeRbCommand+=()
-		else
-				arrHwTranscodeRbCommand+=(--all-eac3)	
+#		elif [ "$str05DefaultAudioTrackChannels" = "1" ] || [ "$str05DefaultAudioTrackChannels" = "2" ] || [ "$str05DefaultAudioTrackChannels" = "3" ]
+#		then
+		else		
+			case $str05DefaultAudioTrackCodec in
+				flac | dts| truehd | pcm_s16le | pcm_s24le)
+					arrOtherTranscodeRbCommand+=(--all-eac3)
+					;;
+				ac3 | eac3 | aac)
+					arrOtherTranscodeRbCommand+=()
+					;;				
+				*)
+					arrOtherTranscodeRbCommand+=()		
+				;;
+			esac
 		fi
 		
-	
 		
 		
 		# Main Audio Settings
@@ -2162,25 +2175,25 @@ _EOF_
 		case $str05DefaultAudioTrackCodec in
 		
 			flac)
-				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
+				arrOtherTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
 				;;
 			eac3)
-				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
+				arrOtherTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
 				;;			
 			ac3)
-				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
+				arrOtherTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
 				;;
 			dts)
-				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
+				arrOtherTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
 				;;
 			truehd)
-				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
+				arrOtherTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
 				;;			
 			pcm_s16le)
-				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
+				arrOtherTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
 				;;
 			pcm_s24le)
-				arrHwTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
+				arrOtherTranscodeRbCommand+=(--main-audio ${str05DefaultAudioTrackIndex}${str05MainAudioOriginalSetting})	
 				;;	
 			*)
 				echo "*******************************************************************************************"
@@ -2211,18 +2224,18 @@ _EOF_
 #				if [ "$str05DefaultAudioTrackChannelLayout" = "mono" ]
 				if [ "$str05DefaultAudioTrackChannels" = "1" ]
 				then
-					arrHwTranscodeRbCommand+=()					
+					arrOtherTranscodeRbCommand+=()					
 #				elif [ "$str05DefaultAudioTrackChannelLayout" = "stereo" ]
 				elif [ "$str05DefaultAudioTrackChannels" = "2" ]
 				then
-					arrHwTranscodeRbCommand+=()
+					arrOtherTranscodeRbCommand+=()
 #				elif [ "$str05DefaultAudioTrackChannelLayout" = "3.0" ]
 				elif [ "$str05DefaultAudioTrackChannels" = "3" ]
 
 				then
-					arrHwTranscodeRbCommand+=()
+					arrOtherTranscodeRbCommand+=()
 				else
-					arrHwTranscodeRbCommand+=(--add-audio ${str05DefaultAudioTrackIndex}=stereo)					
+					arrOtherTranscodeRbCommand+=(--add-audio ${str05DefaultAudioTrackIndex}=stereo)					
 				fi	
 				;;
 				
@@ -2248,7 +2261,7 @@ _EOF_
 		
 		if [ "$str05CopyAllOtherAudio" = "true" ]
 		then
-			arrHwTranscodeRbCommand+=(--add-audio all=original )
+			arrOtherTranscodeRbCommand+=(--add-audio all=original )
 		else
 		
 			# Check for a track called "Commentary" and/or "AD" ... exact matches only
@@ -2260,19 +2273,19 @@ _EOF_
 				case $str05DefaultAudioTrackCommentaryChannelLayout in
 			
 					"4.0"|"5.0(side)"|"5.1(side)"|"6.1"|"7.1") 
-						arrHwTranscodeRbCommand+=(--add-audio Commentary=surround )
+						arrOtherTranscodeRbCommand+=(--add-audio Commentary=surround )
 						;;
 
 					"3.0"|stereo)
-						arrHwTranscodeRbCommand+=(--add-audio Commentary=stereo )
+						arrOtherTranscodeRbCommand+=(--add-audio Commentary=stereo )
 						;;
 
 					mono)
-						arrHwTranscodeRbCommand+=(--add-audio Commentary )
+						arrOtherTranscodeRbCommand+=(--add-audio Commentary )
 						;;
 
 					*)	
-						arrHwTranscodeRbCommand+=(--add-audio Commentary )
+						arrOtherTranscodeRbCommand+=(--add-audio Commentary )
 						;;	
 				esac	
 			fi
@@ -2282,19 +2295,19 @@ _EOF_
 				case $str05DefaultAudioTrackADChannelLayout in
 		
 					"4.0"|"5.0(side)"|"5.1(side)"|"6.1"|"7.1") 
-						arrHwTranscodeRbCommand+=(--add-audio AD=surround )
+						arrOtherTranscodeRbCommand+=(--add-audio AD=surround )
 						;;
 				
 					"3.0"|stereo)
-						arrHwTranscodeRbCommand+=(--add-audio AD=stereo )
+						arrOtherTranscodeRbCommand+=(--add-audio AD=stereo )
 						;;
 				
 					mono)
-						arrHwTranscodeRbCommand+=(--add-audio AD )
+						arrOtherTranscodeRbCommand+=(--add-audio AD )
 						;;
 				
 					*)	
-						arrHwTranscodeRbCommand+=(--add-audio AD )
+						arrOtherTranscodeRbCommand+=(--add-audio AD )
 						;;	
 				esac	
 			fi
@@ -2318,12 +2331,12 @@ _EOF_
 		then
 			if [ "$str05DefaultAudioTrackSubForcedFlagPresence" -eq "1" ]
 			then
-				arrHwTranscodeRbCommand+=(--burn-subtitle auto)
+				arrOtherTranscodeRbCommand+=(--burn-subtitle auto)
 			fi
 		else
 				if [ "$str05SubtitleForcedPresence" -eq "1" ]
 				then
-					arrHwTranscodeRbCommand+=(--add-subtitle auto)
+					arrOtherTranscodeRbCommand+=(--add-subtitle auto)
 				fi
 		fi	
 
@@ -2348,17 +2361,17 @@ _EOF_
 			eng)
 				if [ "$str05SubtitleEnglishPresence" -eq "1" ]
 				then
-					arrHwTranscodeRbCommand+=(--add-subtitle English)
+					arrOtherTranscodeRbCommand+=(--add-subtitle English)
 				fi
 				
 				if [ "$str05SubtitleSDHPresence" -eq 1 ]
 				then
-					arrHwTranscodeRbCommand+=(--add-subtitle SDH)
+					arrOtherTranscodeRbCommand+=(--add-subtitle SDH)
 				fi
 				
 				if [ "$str05SubtitleCommentaryPresence" -ge 1 ]
 				then
-					arrHwTranscodeRbCommand+=(--add-subtitle Commentary)
+					arrOtherTranscodeRbCommand+=(--add-subtitle Commentary)
 				fi
 				;;
 			*)
@@ -2366,22 +2379,22 @@ _EOF_
 				then
 					if [ "$str05SubtitleCommentaryPresence" -ge 1 ]
 					then
-						arrHwTranscodeRbCommand+=(--add-subtitle Commentary)
+						arrOtherTranscodeRbCommand+=(--add-subtitle Commentary)
 					fi
 				else
 					if [ "$str05SubtitleEnglishPresence" -eq "1" ]
 					then
-						arrHwTranscodeRbCommand+=(--add-subtitle English)
+						arrOtherTranscodeRbCommand+=(--add-subtitle English)
 					fi
 				
 					if [ "$str05SubtitleSDHPresence" -eq 1 ]
 					then
-						arrHwTranscodeRbCommand+=(--add-subtitle SDH)
+						arrOtherTranscodeRbCommand+=(--add-subtitle SDH)
 					fi
 				
 					if [ "$str05SubtitleCommentaryPresence" -ge 1 ]
 					then
-						arrHwTranscodeRbCommand+=(--add-subtitle Commentary)
+						arrOtherTranscodeRbCommand+=(--add-subtitle Commentary)
 					fi
 				fi
 				;;
@@ -2396,7 +2409,7 @@ _EOF_
   		  	
 		if [ "$str05ProgressiveOrInterlace" != "progressive" ] && [ "$str05ColorPrimaries" != "bt2020" ]
 		then
-			arrHwTranscodeRbCommand+=(--deinterlace)
+			arrOtherTranscodeRbCommand+=(--deinterlace)
 		fi
 
 
@@ -2413,7 +2426,7 @@ _EOF_
 
 		if [ "$str05EnableDTSPassthrough" = "true" ]
 		then
-			arrHwTranscodeRbCommand+=(--pass-dts)
+			arrOtherTranscodeRbCommand+=(--pass-dts)
 		fi	
 		
 		
@@ -2422,7 +2435,7 @@ _EOF_
 		
 		if [ "$str05KeepAC3Stereo" = "true" ]
 		then
-			arrHwTranscodeRbCommand+=(--keep-ac3-stereo)
+			arrOtherTranscodeRbCommand+=(--keep-ac3-stereo)
 		fi	
 
 
@@ -2431,7 +2444,7 @@ _EOF_
 
 		if [[ $str05SurroundBitrateOverride =~ ^[0-9]+$ ]]
 		then
-			arrHwTranscodeRbCommand+=(--surround-bitrate $str05SurroundBitrateOverride)
+			arrOtherTranscodeRbCommand+=(--surround-bitrate $str05SurroundBitrateOverride)
 		fi	
 
 
@@ -2440,7 +2453,7 @@ _EOF_
 
 		if [[ $str05StereoBitrateOverride =~ ^[0-9]+$ ]]
 		then
-			arrHwTranscodeRbCommand+=(--stereo-bitrate $str05StereoBitrateOverride)
+			arrOtherTranscodeRbCommand+=(--stereo-bitrate $str05StereoBitrateOverride)
 		fi	
 
 		
@@ -2449,13 +2462,13 @@ _EOF_
 
 		if [[ $str05MonoBitrateOverride =~ ^[0-9]+$ ]]
 		then
-			arrHwTranscodeRbCommand+=(--mono-bitrate $str05MonoBitrateOverride)
+			arrOtherTranscodeRbCommand+=(--mono-bitrate $str05MonoBitrateOverride)
 		fi	
 
 
 
 
-		echo "${arrHwTranscodeRbCommand[@]}" > $dirOutboxCommands/${str05RawName}.other-transcode.command.txt
+		echo "${arrOtherTranscodeRbCommand[@]}" > $dirOutboxCommands/${str05RawName}.other-transcode.command.txt
 
 		# Unset Variables for next iteration
 		unset str05SetCopyVideo
@@ -2474,6 +2487,7 @@ _EOF_
   		unset str05MonoBitrateOverride
   		unset str05UseQSV
   		unset str05UseVideoToolBox
+  		unset str05DefaultVideoCodec
 		
         # When batch mode is on, no file moves should be made
         
@@ -3375,7 +3389,44 @@ create_folder_and_move() {
 		strP02FileName=${strP02FileName/\.\//}
 		# Determine if it's a Movie or a TV show
 		strTVRegEx="([sS]([0-9]{2,}|[X]{2,})[eE]([0-9]{2,}|[Y]{2,}))"
+
+		strP02FileNameNoMKV=$( echo $strP02FileName | sed 's/\.mkv//g')
 		
+	    dirSourceCommands=$( echo $dirReadyForTranscoding | sed 's/\/04_ReadyForTranscoding/\/03_Outbox\/Commands/g' )
+        strP02RawVideoCodecName=$( awk -F' --' '{print $2}' $dirSourceCommands/${strP02FileNameNoMKV}.other-transcode.command.txt )
+
+		case $strP02RawVideoCodecName in
+			copy-video)
+				dirP02RawVideoCodec="OTHER"
+				shift
+				;;
+			hevc)
+				dirP02RawVideoCodec="HEVC"
+				shift
+				;;
+			qsv)
+				dirP02RawVideoCodec="QSV"
+				shift
+				;;	
+			x264-avbr)
+				dirP02RawVideoCodec="x264-avbr"
+				shift
+				;;
+			vt)
+				dirP02RawVideoCodec="VT"
+				shift
+				;;			
+			*)
+				dirP02RawVideoCodec="OTHER"
+				shift
+				;;
+		esac
+		
+		if [ ! -d ${dirTranscodedWorkDir}/${dirP02RawVideoCodec} ]
+		then
+			mkdir ${dirTranscodedWorkDir}/${dirP02RawVideoCodec}
+		fi
+				
 		if [[ "$strP02FileName" =~ $strTVRegEx ]]
 		then
 			# Determine the Show name
@@ -3385,27 +3436,27 @@ create_folder_and_move() {
 			#strTVShowSeasonNo=$( echo "$strP02FileName" | sed 's/.*\ -\ S//g' | cut -c1-2 | sed 's/^0*//g' )
 			strTVShowSeasonNo=$( echo "$strP02FileName" | cut -d"-" -f2 | sed 's/.*\ S//g' | cut -c1-2 | sed 's/^0//g' )
 
-			if [ ! -d ${dirTranscodedWorkDir}/${strTVShowName} ]
+			if [ ! -d ${dirTranscodedWorkDir}/${dirP02RawVideoCodec}/${strTVShowName} ]
 			then
-				mkdir ${dirTranscodedWorkDir}/${strTVShowName}
+				mkdir ${dirTranscodedWorkDir}/${dirP02RawVideoCodec}/${strTVShowName}
 			fi
 			
 			strTVShowSeasonFolder="Season ${strTVShowSeasonNo}"			
-			if [ ! -d ${dirTranscodedWorkDir}/${strTVShowName}/$strTVShowSeasonFolder ]
+			if [ ! -d ${dirTranscodedWorkDir}/${dirP02RawVideoCodec}/${strTVShowName}/$strTVShowSeasonFolder ]
 			then
-				mkdir ${dirTranscodedWorkDir}/${strTVShowName}/${strTVShowSeasonFolder}
+				mkdir ${dirTranscodedWorkDir}/${dirP02RawVideoCodec}/${strTVShowName}/${strTVShowSeasonFolder}
 
 			fi
 			
-			mv -v -i $dirTranscodedWorkDir/$strP02FileName ${dirTranscodedWorkDir}/${strTVShowName}/${strTVShowSeasonFolder}/${strP02FileName}
+			mv -v -i $dirTranscodedWorkDir/$strP02FileName ${dirTranscodedWorkDir}/${dirP02RawVideoCodec}/${strTVShowName}/${strTVShowSeasonFolder}/${strP02FileName}
 			
 		else	
 
 			strP02File=$(basename $strP02FileName)		
 			strRawName=$(echo $strP02File | sed 's/\.mkv//g')
 			
-			mkdir ${strRawName}
-			mv -v -i $dirTranscodedWorkDir/$strP02FileName $dirTranscodedWorkDir/${strRawName}/${strP02FileName}
+			mkdir ${dirP02RawVideoCodec}/${strRawName}
+			mv -v -i $dirTranscodedWorkDir/$strP02FileName $dirTranscodedWorkDir/${dirP02RawVideoCodec}/${strRawName}/${strP02FileName}
 	  		
 		    read line </dev/null
 		fi 
@@ -3607,14 +3658,52 @@ copy_transcoded_log_to_media() {
 	# Source Directory
 	dirSourceTranscodedLog="$dirTranscodedWorkDir"
 	
-	# Destination Directory
-	dirDestinationTranscodedLog="$dirDropboxLogsDir/Logs"
+	# Destination commands folder 
+	dirDestinationCommands="$dirDropboxLogsDir/Commands"
 	
 	cd $dirSourceTranscodedLog
 			
 	for strP05LogName in `find . -type f -name "*.mkv.log" | sort`
 	do
 		strP05LogName=${strP05LogName/\.\//}
+		strP05FileNameNoMKVLOG=$( echo $strP05LogName | sed 's/\.mkv\.log//g')
+        strP05RawVideoCodecName=$( awk -F' --' '{print $2}' $dirDestinationCommands/${strP05FileNameNoMKVLOG}.other-transcode.command.txt )
+
+		case $strP05RawVideoCodecName in
+			copy-video)
+				dirP05LogDir="Logs"
+				shift
+				;;
+			hevc)
+				dirP05LogDir="Logs"
+				shift
+				;;
+			qsv)
+				dirP05LogDir="Logs (QSV)"
+				shift
+				;;	
+			x264-avbr)
+				dirP05LogDir="Logs (x264-avbr)"
+				shift
+				;;
+			vt)
+				dirP05LogDir="VT"
+				shift
+				;;			
+			*)
+				dirP05LogDir="Logs"
+				shift
+				;;
+		esac
+		
+		# Destination Directory
+		dirDestinationTranscodedLog="${dirDropboxLogsDir}/${dirP05LogDir}"
+		
+		
+		if [ ! -d $dirDestinationTranscodedLog ]
+		then
+			mkdir $dirDestinationTranscodedLog
+		fi
 
 		if [ ! -f $dirDestinationTranscodedLog/$strP05LogName ]
 			then
@@ -4002,5 +4091,3 @@ case $strRunMode in
 			exit
 			;;		
 esac					
-
-
