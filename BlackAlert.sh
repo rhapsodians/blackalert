@@ -1802,6 +1802,12 @@ other-transcode_commands() {
 	echo ""
 	echo ""
 
+	# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	# CORE OTHER-TRANSCODE Command 
+	# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	strOtherTranscodeCommandMac="/Users/joe/Downloads/beta-20201223b-other-transcode.rb"
+	strOtherTranscodeCommandWin="beta-20201223b-other-transcode.rb"
+
 		
 	# Need to identify the files for mkvpropedit processing next
 	cd $dirProcessing
@@ -2089,39 +2095,39 @@ _EOF_
 		
 			if [[ "$str05X264AVBRActive" = "true" ]]
 				then
-				arrOtherTranscodeRbCommand=(/Users/joe/Downloads/beta-20201223b-other-transcode.rb \"${strMacFile}\" $strX264AVBRDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
+				arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" $strX264AVBRDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
-			 	arrOtherTranscodeRbCommand=(/Users/joe/Downloads/beta-20201223b-other-transcode.rb \"${strMacFile}\" --copy-video )
+			 	arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" --copy-video )
 			else
-				arrOtherTranscodeRbCommand=(/Users/joe/Downloads/beta-20201223b-other-transcode.rb \"${strMacFile}\" $strVTDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate} ) 
+				arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" $strVTDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate} ) 
 			fi
 		
    		else 
 			if [[ "$str05X264AVBRActive" = "true" ]]
 				then
-				arrOtherTranscodeRbCommand=(call beta-20201223b-other-transcode.rb \"${strWinFile}\" $strX264AVBRDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
+				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strX264AVBRDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
-			 	arrOtherTranscodeRbCommand=(call beta-20201223b-other-transcode.rb \"${strWinFile}\" --copy-video )
+			 	arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" --copy-video )
 			 	
 			elif [[ "$str05UseQSV" = "true" ]]
 				then
 				#arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
-				arrOtherTranscodeRbCommand=(call beta-20201223b-other-transcode.rb \"${strWinFile}\" $strQSVDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
+				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
 
 			elif [[ "$str05DefaultVideoCodec" = "vc1" ]]
 				then
 					if [[ "$str05VC1OverrideQSVDefaultsWith10bitHEVC" = "true" ]]
 					then
-						arrOtherTranscodeRbCommand=(call beta-20201223b-other-transcode.rb \"${strWinFile}\" $strHEVCDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate})
+						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate})
 					else
-						arrOtherTranscodeRbCommand=(call beta-20201223b-other-transcode.rb \"${strWinFile}\" $strQSVDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
+						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
 					fi		
 			else	
-				arrOtherTranscodeRbCommand=(call beta-20201223b-other-transcode.rb \"${strWinFile}\" $strHEVCDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate})
+				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate})
 			fi		
 		fi
 

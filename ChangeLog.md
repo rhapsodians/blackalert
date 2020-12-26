@@ -9,6 +9,7 @@ _26 December 2020_
 - Add new option to override VC-1 defaults from QSV to 10-bit HEVC 
 - Separated out and variable-ised core default arguments 
 - Fixed audio choice bug where QSV overrides were not being correctly applied.
+- Added variable for `other-transcode` for Mac and PC to quickly add in beta test versions or revert to normal gem-installed versions
 
 
 ## 0.33 ##
