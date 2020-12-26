@@ -2106,20 +2106,22 @@ _EOF_
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
 			 	arrOtherTranscodeRbCommand=(call beta-20201223b-other-transcode.rb \"${strWinFile}\" --copy-video )
+			 	
 			elif [[ "$str05UseQSV" = "true" ]]
 				then
 				#arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
 				arrOtherTranscodeRbCommand=(call beta-20201223b-other-transcode.rb \"${strWinFile}\" $strQSVDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
 
-			else
-				if [[ "$str05DefaultVideoCodec" = "vc1" ]] && [[ "$str05VC1OverrideQSVDefaultsWith10bitHEVC" = "VC1OverrideQSVDefaultsWith10bitHEVC" ]]
+			elif [[ "$str05DefaultVideoCodec" = "vc1" ]]
 				then
-					arrOtherTranscodeRbCommand=(call beta-20201223b-other-transcode.rb \"${strWinFile}\" $strQSVDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
-				else
-					# arrOtherTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
-					# arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
-					arrOtherTranscodeRbCommand=(call beta-20201223b-other-transcode.rb \"${strWinFile}\" $strHEVCDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate})
-				fi
+					if [[ "$str05VC1OverrideQSVDefaultsWith10bitHEVC" = "true" ]]
+					then
+						arrOtherTranscodeRbCommand=(call beta-20201223b-other-transcode.rb \"${strWinFile}\" $strHEVCDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate})
+					else
+						arrOtherTranscodeRbCommand=(call beta-20201223b-other-transcode.rb \"${strWinFile}\" $strQSVDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
+					fi		
+			else	
+				arrOtherTranscodeRbCommand=(call beta-20201223b-other-transcode.rb \"${strWinFile}\" $strHEVCDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate})
 			fi		
 		fi
 
@@ -2164,14 +2166,14 @@ _EOF_
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrOtherTranscodeRbCommand+=(--eac3 )	
+						arrOtherTranscodeRbCommand+=(--eac3 --aac-stereo)	
 					fi	
 					;;
 				eac3)
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrOtherTranscodeRbCommand+=()
+						arrOtherTranscodeRbCommand+=(--eac3 --aac-stereo)
 					else
 						arrOtherTranscodeRbCommand+=(--eac3 )	
 					fi	
@@ -2180,21 +2182,21 @@ _EOF_
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrOtherTranscodeRbCommand+=()
+						arrOtherTranscodeRbCommand+=(--eac3 --aac-stereo)
 					fi	
 					;;	
 				pcm_s24le)
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrOtherTranscodeRbCommand+=()
+						arrOtherTranscodeRbCommand+=(--eac3 --aac-stereo)
 					fi	
 					;;	
 				aac)
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrOtherTranscodeRbCommand+=()	
+						arrOtherTranscodeRbCommand+=(--aac-stereo)	
 					fi	
 					;;	
 				

@@ -1,13 +1,14 @@
 # Change Log #
 
 ## 0.34 ##
-_24 December 2020_
+_26 December 2020_
 - Updates for `other-transcode` v0.7.0
 - Added new `ffprobe .width` variable
 - Restored previous default bitrates for video/audio streams (by passing new, lower defaults)
 - Removed additional stereo track from 4K/HDR transcodes
 - Add new option to override VC-1 defaults from QSV to 10-bit HEVC 
 - Separated out and variable-ised core default arguments 
+- Fixed audio choice bug where QSV overrides were not being correctly applied.
 
 
 ## 0.33 ##
