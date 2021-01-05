@@ -1805,8 +1805,8 @@ other-transcode_commands() {
 	# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	# CORE OTHER-TRANSCODE Command 
 	# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	strOtherTranscodeCommandMac="/Users/joe/Downloads/beta-20201223b-other-transcode.rb"
-	strOtherTranscodeCommandWin="beta-20201223b-other-transcode.rb"
+	strOtherTranscodeCommandMac="other-transcode.rb"
+	strOtherTranscodeCommandWin="other-transcode.rb"
 
 		
 	# Need to identify the files for mkvpropedit processing next
