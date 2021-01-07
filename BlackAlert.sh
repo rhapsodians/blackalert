@@ -1805,8 +1805,8 @@ other-transcode_commands() {
 	# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	# CORE OTHER-TRANSCODE Command 
 	# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	strOtherTranscodeCommandMac="other-transcode.rb"
-	strOtherTranscodeCommandWin="other-transcode.rb"
+	strOtherTranscodeCommandMac="other-transcode"
+	strOtherTranscodeCommandWin="other-transcode"
 
 		
 	# Need to identify the files for mkvpropedit processing next
