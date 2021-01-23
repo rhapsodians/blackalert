@@ -2056,7 +2056,7 @@ _EOF_
    		# ---------------------------------------------------
    		strX264AVBRDefaults="--x264-avbr --crop auto"
    		strVTDefaults="--vt --hevc"
-   		strQSVDefaults="--qsv --qsv-decoder --preset veryslow --decode all"
+   		strQSVDefaults="--qsv --cuda --preset veryslow --decode all"
    		strHEVCDefaults="--hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32"
    		strMaxMuxingQueue="--max-muxing-queue-size 1024"   		
    		

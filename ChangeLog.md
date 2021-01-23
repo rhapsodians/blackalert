@@ -1,7 +1,7 @@
 # Change Log #
 
 ## 0.34 ##
-_26 December 2020_
+_22 January 2021_
 - Updates for `other-transcode` v0.7.0
 - Added new `ffprobe .width` variable
 - Restored previous default bitrates for video/audio streams (by passing new, lower defaults)
@@ -10,6 +10,7 @@ _26 December 2020_
 - Separated out and variable-ised core default arguments 
 - Fixed audio choice bug where QSV overrides were not being correctly applied.
 - Added variable for `other-transcode` for Mac and PC to quickly add in beta test versions or revert to normal gem-installed versions
+- Removed `--qsv-decoder` from the QSV defaults and replaced it with `--cuda` to eliminate a large audio offset (`Delay Relative to Video`) of up to -172ms.
 
 
 ## 0.33 ##
