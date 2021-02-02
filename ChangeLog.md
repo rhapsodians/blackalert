@@ -1,5 +1,9 @@
 # Change Log #
 
+## 0.35 ##
+_2 February 2021_
+
+
 ## 0.34 ##
 _2 February 2021_
 - Updates for `other-transcode` v0.7.0
