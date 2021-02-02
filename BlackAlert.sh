@@ -153,7 +153,7 @@ Current Working Directory
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/E/Engine_Room
+  1. /Volumes/192.168.0.120/Engine_Room
   2. /Volumes/Media/Engine_Room
   3. /mnt/e/Engine_Room
   0. Quit
@@ -167,7 +167,7 @@ _EOF_
   		if [[ $REPLY =~ ^[0-3]$ ]]; then
     	case $REPLY in
      	1)
-           	dirMacWorkDir="/Volumes/E/Engine_Room"
+           	dirMacWorkDir="/Volumes/192.168.0.120/Engine_Room"
           	break
           	;;
       	2)
@@ -2710,7 +2710,7 @@ Raw Original MKV Directory
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/E/Engine_Room/04_ReadyForTranscoding
+  1. /Volumes/192.168.0.120/Engine_Room/04_ReadyForTranscoding
   2. /Volumes/Media/Engine_Room/04_ReadyForTranscoding
   3. /mnt/e/Engine_Room/04_ReadyForTranscoding
   0. Quit
@@ -2724,7 +2724,7 @@ _EOF_
   		if [[ $REPLY =~ ^[0-3]$ ]]; then
     	case $REPLY in
      	1)
-           	dirReadyForTranscoding="/Volumes/E/Engine_Room/04_ReadyForTranscoding"
+           	dirReadyForTranscoding="/Volumes/192.168.0.120/Engine_Room/04_ReadyForTranscoding"
           	break
           	;;
       	2)
