@@ -2,9 +2,9 @@
 
 ###############################################################################
 # BlackAlert.sh                                                               #
-# Version 0.33                                                                #
+# Version 0.34                                                                #
 #                                                                             #
-# Copyright 2020 - Joe Hurley                                                 #
+# Copyright 2021 - Joe Hurley                                                 #
 #                                                                             #
 ###############################################################################
 #                                                                             #
@@ -22,7 +22,7 @@ DELAY=2
 
 echo "############################################################################################"
 echo "#                                                                                          #"
-echo "# BLACKALERT.SH (v0.33)                                                                    #"
+echo "# BLACKALERT.SH (v0.34)                                                                    #"
 echo "#                                                                                          #"
 echo "############################################################################################"
 
@@ -153,7 +153,7 @@ Current Working Directory
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/E/Engine_Room
+  1. /Volumes/192.168.0.120/Engine_Room
   2. /Volumes/Media/Engine_Room
   3. /mnt/e/Engine_Room
   0. Quit
@@ -167,7 +167,7 @@ _EOF_
   		if [[ $REPLY =~ ^[0-3]$ ]]; then
     	case $REPLY in
      	1)
-           	dirMacWorkDir="/Volumes/E/Engine_Room"
+           	dirMacWorkDir="/Volumes/192.168.0.120/Engine_Room"
           	break
           	;;
       	2)
@@ -587,6 +587,7 @@ Please select one of the following:
 		- Use --x264-avbr software encoding
 		- VideoToolbox h/w transcoding (Mac)
 		- Disable forced subtitle burn-in
+		- VC-1: 10-bit HEVC instead of 8-bit QSV
 	9. Next
 	0. Quit
 
@@ -765,17 +766,18 @@ Please select one of the following:
 	2. Create single/unified mkvpropedit script
 	3. Use --x264-avbr software encoding
 	4. VideoToolbox h/w transcoding (Mac)
-	5. Disable forced subtitle burn-in	
-	6. Back
+	5. Disable forced subtitle burn-in
+	6. VC-1: 10-bit HEVC instead of 8-bit QSV
+	7. Back
 	0. Quit
 
 =================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-6] > "
+	  read -p "Enter selection [0-7] > "
 
-  		if [[ $REPLY =~ ^[0-6]$ ]]; then
+  		if [[ $REPLY =~ ^[0-7]$ ]]; then
     	case $REPLY in
      	1)
            	step4_ffprobe_tsv
@@ -801,8 +803,13 @@ _EOF_
       	  	step4_ffprobe_tsv
       	  	step4_DisableForcedSubtitleAutoBurnIn
           	continue
-          	;;          	          	          	
+          	;;      	      	          	          	
         6)
+        	step4_ffprobe_tsv
+        	step4_VC1OverrideQSVDefaultsWith10bitHEVC
+        	continue
+        	;;
+        7)
         	break
         	;;	
         0)
@@ -842,7 +849,7 @@ step4_ffprobe_summary() {
 step4_ffprobe_command() {
 
 	#ffprobe -v error -show_entries stream=index,format,codec_name,channel_layout,channels,codec_type:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
-	ffprobe -v error -show_entries stream=index,format,codec_name,profile,channel_layout,channels,codec_type,color_primaries,field_order:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
+	ffprobe -v error -show_entries stream=index,format,codec_name,profile,height,channel_layout,channels,codec_type,color_primaries,field_order:stream_tags=language,title,BPS-eng,NUMBER_OF_FRAMES-eng:stream_disposition=forced,default -print_format json=compact=1 $1
 
 }
 
@@ -850,14 +857,14 @@ step4_ffprobe_command() {
 step4_jq_selectall_command() {
 
 #	jq -r '["TYPE","INDEX","LANGUAGE","CODEC","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @csv ' | sed 's/\"//g' | sed 's/,/ ,/g' | column -t -s ','
-	jq -r '["TYPE","INDEX","LANGUAGE","CODEC","PROFILE","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .profile, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @tsv ' | sed 's/\"//g' | sed -E 's/'$(printf '\t')'/'$(printf ' \t')'/g' | column -t -s $'\t'
+	jq -r '["TYPE","INDEX","LANGUAGE","CODEC","PROFILE","HEIGHT","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .profile, .height, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @tsv ' | sed 's/\"//g' | sed -E 's/'$(printf '\t')'/'$(printf ' \t')'/g' | column -t -s $'\t'
 }
 
 step4_jq_selectstream_command() {
 
 	# expects an argument of "video", "audio" or "subtitle"
 #	jq -r --arg STREAM "$1" '["TYPE","INDEX","LANGUAGE","CODEC","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type==$STREAM) | [.codec_type, .index, .tags.language, .codec_name, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @csv ' | sed 's/\"//g' | sed 's/,/ ,/g' | column -t -s ','
-	jq -r --arg STREAM "$1" '["TYPE","INDEX","LANGUAGE","CODEC","PROFILE","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type==$STREAM) | [.codec_type, .index, .tags.language, .codec_name, .profile, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @tsv ' | sed 's/\"//g' | sed -E 's/'$(printf '\t')'/'$(printf ' \t')'/g' | column -t -s $'\t'
+	jq -r --arg STREAM "$1" '["TYPE","INDEX","LANGUAGE","CODEC","PROFILE","HEIGHT","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type==$STREAM) | [.codec_type, .index, .tags.language, .codec_name, .profile, .height, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @tsv ' | sed 's/\"//g' | sed -E 's/'$(printf '\t')'/'$(printf ' \t')'/g' | column -t -s $'\t'
 }
 
 
@@ -887,7 +894,7 @@ step4_ffprobe_tsv() {
 	fi	
 
 #	step4_ffprobe_command $FILE | jq -r '.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ] | @csv ' | sed 's/\"//g' > $strFfprobeTsvFile
-	step4_ffprobe_command $FILE | jq -r '.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .profile, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ] | @tsv ' | sed 's/\"//g' > $strFfprobeTsvFile
+	step4_ffprobe_command $FILE | jq -r '.streams[] | select(.codec_type=="video" or .codec_type=="audio" or .codec_type=="subtitle") | [.codec_type, .index, .tags.language, .codec_name, .height, .profile, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ] | @tsv ' | sed 's/\"//g' > $strFfprobeTsvFile
 
 	# =================================================================================
 	# These variables work out the totals
@@ -1003,7 +1010,7 @@ step4_rename_track() {
 	esac
 	
 	strStreamNumber=$number
-	strCurrentStreamTitle=$( grep "${strRenameTrackArg1}\t$strStreamNumber" $strFfprobeTsvFile | cut -f11 )
+	strCurrentStreamTitle=$( grep "${strRenameTrackArg1}\t$strStreamNumber" $strFfprobeTsvFile | cut -f12 )
 	read -p "Rename track $strStreamNumber from $strCurrentStreamTitle to:  "
 	strAudioStreamNewTitle=$REPLY
 	((strStreamNumber++))
@@ -1027,11 +1034,11 @@ step4_set_default_audio_track() {
 	strAudioTrackListing=""
 
 	# Identify the current default audio track and index number
-	local strCheckCurrentAudioDefaultIndex=$( grep ^audio $strFfprobeTsvFile | cut -f9 | grep "1" | wc -l )
+	local strCheckCurrentAudioDefaultIndex=$( grep ^audio $strFfprobeTsvFile | cut -f10 | grep "1" | wc -l )
 
 	if [ $strCheckCurrentAudioDefaultIndex -eq 1 ] 
 		then
-			strCurrentAudioDefaultIndexNumber=$( grep ^audio $strFfprobeTsvFile | cut -f2,9 | grep "\t1" | cut -f1 )	
+			strCurrentAudioDefaultIndexNumber=$( grep ^audio $strFfprobeTsvFile | cut -f2,10 | grep "\t1" | cut -f1 )	
 			echo ""
 			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			step4_ffprobe_command $FILE | step4_jq_selectstream_command audio
@@ -1173,7 +1180,7 @@ step4_set_forced_subtitle_track() {
 
 	if [ $strCheckCurrentForcedSubIndex -eq 1 ] 
 		then
-			strCurrentForcedSubtitleIndexNumber=$( grep ^subtitle $strFfprobeTsvFile | cut -f2,10 | grep "\t1" | cut -f1 )	
+			strCurrentForcedSubtitleIndexNumber=$( grep ^subtitle $strFfprobeTsvFile | cut -f2,11 | grep "\t1" | cut -f1 )	
 			echo ""
 			echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 			step4_ffprobe_command $FILE | step4_jq_selectstream_command subtitle
@@ -1410,8 +1417,8 @@ step4_copy_all_audio_tracks() {
 	CopyAllOtherAudio=""
 
 	# Identify the current default audio track and index number
-	local strCheckCurrentAudioDefaultIndex=$( grep ^audio $strFfprobeTsvFile | cut -f9 | grep "1" | wc -l )
-	strCurrentAudioDefaultIndexNumber=$( grep ^audio $strFfprobeTsvFile | cut -f2,9 | grep "\t1" | cut -f1 )	
+	local strCheckCurrentAudioDefaultIndex=$( grep ^audio $strFfprobeTsvFile | cut -f10 | grep "1" | wc -l )
+	strCurrentAudioDefaultIndexNumber=$( grep ^audio $strFfprobeTsvFile | cut -f2,10 | grep "\t1" | cut -f1 )	
 	
 	echo ""
 	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
@@ -1495,7 +1502,6 @@ step4_KeepAC3Stereo() {
 
 step4_DisableForcedSubtitleAutoBurnIn() {
 
-	
 	echo "DisableForcedSubtitleAutoBurnIn,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
 	echo ""
 	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
@@ -1504,6 +1510,20 @@ step4_DisableForcedSubtitleAutoBurnIn() {
 	echo ""	
 
 }
+
+
+step4_VC1OverrideQSVDefaultsWith10bitHEVC() {
+
+	echo "VC1OverrideQSVDefaultsWith10bitHEVC,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo "QSV defaults will not be used for this VC-1 transcode. 10-bit HEVC will be used instead"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""	
+
+}
+
+
 
 
 step4_SurroundBitrateOverride() {
@@ -1656,9 +1676,9 @@ step4_mkvpropedit_unfied_command() {
 	do
 		Col01_stream=$( echo $line | cut -f1 )
 		Col02_index=$( echo $line | cut -f2 )
-		Col08_default=$( echo $line | cut -f9 )
-		Col09_forced=$( echo $line | cut -f10 )
-		Col10_title=$( echo $line | cut -f11 )
+		Col08_default=$( echo $line | cut -f10 )
+		Col09_forced=$( echo $line | cut -f11 )
+		Col10_title=$( echo $line | cut -f12 )
 
 		case $Col01_stream in
 			video)
@@ -1782,6 +1802,12 @@ other-transcode_commands() {
 	echo ""
 	echo ""
 
+	# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	# CORE OTHER-TRANSCODE Command 
+	# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	strOtherTranscodeCommandMac="other-transcode"
+	strOtherTranscodeCommandWin="other-transcode"
+
 		
 	# Need to identify the files for mkvpropedit processing next
 	cd $dirProcessing
@@ -1878,6 +1904,7 @@ _EOF_
   		
   		str05FfprobeOutput=""
   		str05DefaultVideoCodec=""
+  		str05VideoHeight=""
   		str05DefaultAudioTrackIndex=""
   		str05DefaultAudioTrackCodec=""
   		str05DefaultAudioTrackChannelLayout=""
@@ -1921,6 +1948,7 @@ _EOF_
   		
   		str05FfprobeOutput=$( step4_ffprobe_command $FILE )
   		str05DefaultVideoCodec=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="video") | .codec_name' )
+  		str05VideoHeight=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="video") | .height' )
   		str05DefaultAudioTrackIndex=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .index' )
   		str05DefaultAudioTrackCodec=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .codec_name' )
   		str05DefaultAudioTrackChannelLayout=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="audio" and .disposition.default==1) | .channel_layout' )
@@ -1963,6 +1991,7 @@ _EOF_
 			str05CopyAllOtherAudio=$( grep CopyAllOtherAudio $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05EAC3SurroundAACStereoMono=$( grep EAC3SurroundAACStereoMono $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05DisableForcedSubtitleAutoBurnIn=$( grep DisableForcedSubtitleAutoBurnIn $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05VC1OverrideQSVDefaultsWith10bitHEVC=$( grep VC1OverrideQSVDefaultsWith10bitHEVC $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05EnableDTSPassthrough=$( grep EnableDTSPassthrough $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05KeepAC3Stereo=$( grep KeepAC3Stereo $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05SurroundBitrateOverride=$( grep SurroundBitrateOverride $str05OverrideFile | cut -d"," -f2 2>&1)
@@ -2013,47 +2042,101 @@ _EOF_
    		#
    		# Removed cuvid on 24-Aug-2020 as it causes issues with 4K transcoding - Coco had 34 sec of black screen at the start 
    		# of the movie and Inception had its 12Mbit/sec bitrate reduced to approx 800 kbit/sec.
-   		 		
+   		#
+   		# From other-transcode 0.7.0, the default video bitrates were reduced by 1/3. I intend to keep the old (higher) defaults
+   		# so will have to add --target values.
+   		# 
+		# WIDTH        HEVC      AVC
+   		# 2160p       12000    16000
+   		# 1080p        6000     8000
+   		# 720p         3000     4000
+   		# 576p         1500     2000
+   		
+   		# CORE Defaults
+   		# ---------------------------------------------------
+   		strX264AVBRDefaults="--x264-avbr --crop auto"
+   		strVTDefaults="--vt --hevc"
+   		strQSVDefaults="--qsv --cuda --preset veryslow --decode all"
+   		strHEVCDefaults="--hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32"
+   		strMaxMuxingQueue="--max-muxing-queue-size 1024"   		
+   		
+   		
+   		case $str05VideoHeight in
+   			2160)
+   				strHEVCVideoBitRate="12000"
+   				strH264VideoBitRate="16000"
+   				shift
+   				;;
+   			1080)
+   				strHEVCVideoBitRate="6000"
+   				strH264VideoBitRate="8000"
+   				shift
+   				;;
+      		720)
+   				strHEVCVideoBitRate="3000"
+   				strH264VideoBitRate="4000"
+   				shift
+   				;;				
+     		576)
+   				strHEVCVideoBitRate="1500"
+   				strH264VideoBitRate="2000"
+   				shift
+   				;;
+      		*)
+   				strHEVCVideoBitRate="6000"
+   				strH264VideoBitRate="8000"
+   				shift
+   				;;
+   		esac		 			
+   				
 
 		if [[ "$str05UseVideoToolBox" = "true" ]]
 		then
 		
 			if [[ "$str05X264AVBRActive" = "true" ]]
 				then
-				arrOtherTranscodeRbCommand=(other-transcode \"${strMacFile}\" --x264-avbr --crop auto )
+				arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" $strX264AVBRDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
-			 	arrOtherTranscodeRbCommand=(other-transcode \"${strMacFile}\" --copy-video )
+			 	arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" --copy-video )
 			else
-				arrOtherTranscodeRbCommand=(other-transcode \"${strMacFile}\" --vt --hevc --max-muxing-queue-size 1024 ) 
+				arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" $strVTDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate} ) 
 			fi
 		
    		else 
 			if [[ "$str05X264AVBRActive" = "true" ]]
 				then
-				arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --x264-avbr --crop auto --max-muxing-queue-size 1024 )
+				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strX264AVBRDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
-			 	arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --copy-video --max-muxing-queue-size 1024 )
+			 	arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" --copy-video )
+			 	
 			elif [[ "$str05UseQSV" = "true" ]]
 				then
 				#arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
-				arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --qsv-decoder --preset veryslow --max-muxing-queue-size 1024 )
+				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
 
-			else
-				if [[ "$str05DefaultVideoCodec" = "vc1" ]]
+			elif [[ "$str05DefaultVideoCodec" = "vc1" ]]
 				then
-					arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --qsv-decoder --decode all --preset veryslow --max-muxing-queue-size 1024 )
-				else
-					# arrOtherTranscodeRbCommand=(other-transcode \"${FILE}\" --nvenc )
-					# arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --nvenc --hevc --nvenc-temporal-aq )
-					arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32 --rc-bufsize 3 --max-muxing-queue-size 1024 )
-				fi
+					if [[ "$str05VC1OverrideQSVDefaultsWith10bitHEVC" = "true" ]]
+					then
+						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate})
+					else
+						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
+					fi		
+			else	
+				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate})
 			fi		
 		fi
 
+
+		# Add in MAX MUXING QUEUE
+		# ---------------------------------------------------
+		#   - set the defaults for all transcodes
+		arrOtherTranscodeRbCommand+=($strMaxMuxingQueue )
+		
 
 
 
@@ -2076,7 +2159,10 @@ _EOF_
 		# ---------------------------------------------------
 		# The default is --all-eac3 for certain codecs. Otherwise it's AC3 and/or AAC
 		# 
+		# As of other-transcode 0.7.0, --all-eac3 has been replaced with --eac3
+		# Default bit rates have also been reduced so higher/previous values are being restored.
 		
+		arrOtherTranscodeRbCommand+=(--surround-bitrate 640 --stereo-bitrate 256 )
 		
 		if [ "$str05EAC3SurroundAACStereoMono" = "true" ]
 		then
@@ -2086,45 +2172,37 @@ _EOF_
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrOtherTranscodeRbCommand+=(--eac3)
-					else
-						arrOtherTranscodeRbCommand+=(--all-eac3)	
+						arrOtherTranscodeRbCommand+=(--eac3 --aac-stereo)	
 					fi	
 					;;
 				eac3)
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrOtherTranscodeRbCommand+=()
+						arrOtherTranscodeRbCommand+=(--eac3 --aac-stereo)
 					else
-						arrOtherTranscodeRbCommand+=(--all-eac3)	
+						arrOtherTranscodeRbCommand+=(--eac3 )	
 					fi	
 					;;				
 				pcm_s16le)
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrOtherTranscodeRbCommand+=()
-					else
-						arrOtherTranscodeRbCommand+=()	
+						arrOtherTranscodeRbCommand+=(--eac3 --aac-stereo)
 					fi	
 					;;	
 				pcm_s24le)
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrOtherTranscodeRbCommand+=()
-					else
-						arrOtherTranscodeRbCommand+=()	
+						arrOtherTranscodeRbCommand+=(--eac3 --aac-stereo)
 					fi	
 					;;	
 				aac)
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrOtherTranscodeRbCommand+=()
-					else
-						arrOtherTranscodeRbCommand+=()	
+						arrOtherTranscodeRbCommand+=(--aac-stereo)	
 					fi	
 					;;	
 				
@@ -2149,7 +2227,7 @@ _EOF_
 		else		
 			case $str05DefaultAudioTrackCodec in
 				flac | dts| truehd | pcm_s16le | pcm_s24le)
-					arrOtherTranscodeRbCommand+=(--all-eac3)
+					arrOtherTranscodeRbCommand+=(--eac3 )
 					;;
 				ac3 | eac3 | aac)
 					arrOtherTranscodeRbCommand+=()
@@ -2235,7 +2313,14 @@ _EOF_
 				then
 					arrOtherTranscodeRbCommand+=()
 				else
-					arrOtherTranscodeRbCommand+=(--add-audio ${str05DefaultAudioTrackIndex}=stereo)					
+				
+					if [ $str05VideoHeight="2160" ]
+					then
+						arrOtherTranscodeRbCommand+=()
+					else
+					  arrOtherTranscodeRbCommand+=(--add-audio ${str05DefaultAudioTrackIndex}=stereo)	
+					fi		
+							
 				fi	
 				;;
 				
@@ -2326,12 +2411,24 @@ _EOF_
 		#
 		# If the default forced subtitle burn-in is switched off ($str05DisableForcedSubtitleAutoBurnIn" != "true"), then the forced
 		# subtitle should also be embedded along with English, SDC and Commentary.
+		#
+		# Automatic forced sub additions, not burn-in, for 4K content
+		#
 		
 		if [ "$str05DisableForcedSubtitleAutoBurnIn" != "true" ]
 		then
 			if [ "$str05DefaultAudioTrackSubForcedFlagPresence" -eq "1" ]
 			then
-				arrOtherTranscodeRbCommand+=(--burn-subtitle auto)
+				case $str05VideoHeight in
+				2160)
+					arrOtherTranscodeRbCommand+=(--add-subtitle auto )
+					shift
+					;;
+				*)	
+				    arrOtherTranscodeRbCommand+=(--burn-subtitle auto )
+				    shift
+				    ;;
+				esac    
 			fi
 		else
 				if [ "$str05SubtitleForcedPresence" -eq "1" ]
@@ -2488,6 +2585,7 @@ _EOF_
   		unset str05UseQSV
   		unset str05UseVideoToolBox
   		unset str05DefaultVideoCodec
+  		unset str05VC1OverrideQSVDefaultsWith10bitHEVC
 		
         # When batch mode is on, no file moves should be made
         
@@ -2612,7 +2710,7 @@ Raw Original MKV Directory
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/E/Engine_Room/04_ReadyForTranscoding
+  1. /Volumes/192.168.0.120/Engine_Room/04_ReadyForTranscoding
   2. /Volumes/Media/Engine_Room/04_ReadyForTranscoding
   3. /mnt/e/Engine_Room/04_ReadyForTranscoding
   0. Quit
@@ -2626,7 +2724,7 @@ _EOF_
   		if [[ $REPLY =~ ^[0-3]$ ]]; then
     	case $REPLY in
      	1)
-           	dirReadyForTranscoding="/Volumes/E/Engine_Room/04_ReadyForTranscoding"
+           	dirReadyForTranscoding="/Volumes/192.168.0.120/Engine_Room/04_ReadyForTranscoding"
           	break
           	;;
       	2)

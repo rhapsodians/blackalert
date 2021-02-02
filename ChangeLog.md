@@ -1,5 +1,19 @@
 # Change Log #
 
+## 0.34 ##
+_2 February 2021_
+- Updates for `other-transcode` v0.7.0
+- Added new `ffprobe .width` variable
+- Restored previous default bitrates for video/audio streams (by passing new, lower defaults)
+- Removed additional stereo track from 4K/HDR transcodes
+- Add new option to override VC-1 defaults from QSV to 10-bit HEVC 
+- Separated out and variable-ised core default arguments 
+- Fixed audio choice bug where QSV overrides were not being correctly applied.
+- Added variable for `other-transcode` for Mac and PC to quickly add in beta test versions or revert to normal gem-installed versions
+- Removed `--qsv-decoder` from the QSV defaults and replaced it with `--cuda` to eliminate a large audio offset (`Delay Relative to Video`) of up to -172ms.
+- Replaced `/Volumes/E` with the `/Volumes/IP` address - change after updating to macOS Big Sur 11.2
+
+
 ## 0.33 ##
 _12 December 2020_
 - Back to `other-transcode` as Don released 0.4.0 and 0.5.0 (with the Nvidia presets)
