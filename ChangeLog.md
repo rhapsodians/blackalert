@@ -1,7 +1,9 @@
 # Change Log #
 
 ## 0.35 ##
-_2 February 2021_
+_15 March 2021_
+- Bug fix to correctly generate a stereo track for non-4K movies with conditions. Swapped `if [ ${str05VideoHeight}="2160" ]` for `if [ ${str05VideoHeight} -eq 2160 ]`
+- Swapped over to new IP ranges from NAS mounts
 
 
 ## 0.34 ##
