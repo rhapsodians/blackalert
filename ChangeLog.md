@@ -1,9 +1,12 @@
 # Change Log #
 
 ## 0.35 ##
-_15 March 2021_
+_8 April 2021_
 - Bug fix to correctly generate a stereo track for non-4K movies with conditions. Swapped `if [ ${str05VideoHeight}="2160" ]` for `if [ ${str05VideoHeight} -eq 2160 ]`
 - Swapped over to new IP ranges from NAS mounts
+- Change `--target 576p=1500` to `--target 1500` for DVDs as this height isn't supported by `other-transcode`
+- Add in an option for 480p updated targets
+
 
 
 ## 0.34 ##

@@ -2051,6 +2051,7 @@ _EOF_
    		# 1080p        6000     8000
    		# 720p         3000     4000
    		# 576p         1500     2000
+   		# 480p         1500     2000
    		
    		# CORE Defaults
    		# ---------------------------------------------------
@@ -2078,16 +2079,32 @@ _EOF_
    				shift
    				;;				
      		576)
-   				strHEVCVideoBitRate="1500"
+   				strHEVCVideoBitRate="2000"
+   				strH264VideoBitRate="3000"
+   				shift
+   				;;
+   			480)
+   			   	strHEVCVideoBitRate="1500"
    				strH264VideoBitRate="2000"
    				shift
    				;;
+   				
       		*)
    				strHEVCVideoBitRate="6000"
    				strH264VideoBitRate="8000"
    				shift
    				;;
    		esac		 			
+ 
+ 
+ 		if [[ "$str05VideoHeight" = "576" ]]
+ 		then
+ 			str05H264Target="${strH264VideoBitRate}"
+ 			str05HEVCTarget="${strHEVCVideoBitRate}"
+ 		else
+ 			str05H264Target="${str05VideoHeight}p=${strH264VideoBitRate}"
+ 			str05HEVCTarget="${str05VideoHeight}p=${strHEVCVideoBitRate}" 		
+ 		fi
    				
 
 		if [[ "$str05UseVideoToolBox" = "true" ]]
@@ -2095,19 +2112,19 @@ _EOF_
 		
 			if [[ "$str05X264AVBRActive" = "true" ]]
 				then
-				arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" $strX264AVBRDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
+				arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" $strX264AVBRDefaults --target ${str05H264Target} )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
 			 	arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" --copy-video )
 			else
-				arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" $strVTDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate} ) 
+				arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" $strVTDefaults --target ${str05HEVCTarget} ) 
 			fi
 		
    		else 
 			if [[ "$str05X264AVBRActive" = "true" ]]
 				then
-				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strX264AVBRDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
+				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strX264AVBRDefaults --target ${str05H264Target} )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
@@ -2116,18 +2133,18 @@ _EOF_
 			elif [[ "$str05UseQSV" = "true" ]]
 				then
 				#arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
-				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
+				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05H264Target} )
 
 			elif [[ "$str05DefaultVideoCodec" = "vc1" ]]
 				then
 					if [[ "$str05VC1OverrideQSVDefaultsWith10bitHEVC" = "true" ]]
 					then
-						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate})
+						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --target ${str05HEVCTarget})
 					else
-						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
+						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05H264Target} )
 					fi		
 			else	
-				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate})
+				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --target ${str05HEVCTarget})
 			fi		
 		fi
 
