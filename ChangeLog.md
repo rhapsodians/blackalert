@@ -6,6 +6,7 @@ _8 April 2021_
 - Swapped over to new IP ranges from NAS mounts
 - Change `--target 576p=1500` to `--target 1500` for DVDs as this height isn't supported by `other-transcode`
 - Add in an option for 480p updated targets
+- Changed the methodology to extract forced subtitle checks from using the stream title ("Forced") to using the forced flag setting (`str05SubtitleForcedPresence` from `.disposition.forced`)
 
 
 
