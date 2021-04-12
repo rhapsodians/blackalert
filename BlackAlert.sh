@@ -692,7 +692,7 @@ _EOF_
 
 	  read -p "Enter selection [0-10] > "
 
-  		if [ "$REPLY" -ge 1 ] && [ "$REPLY" -le 10 ]; then
+  		if [[ "$REPLY" =~ ^[0-9]+$ ]] && [ "$REPLY" -ge 1 ] && [ "$REPLY" -le 10 ]; then
     	case $REPLY in
      	1)
            	step4_ffprobe_tsv
