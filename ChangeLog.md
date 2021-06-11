@@ -1,5 +1,11 @@
 # Change Log #
 
+## 0.36 ##
+_11 June 2021_
+- Updates for `other-transcode` v0.9.0
+
+
+
 ## 0.35 ##
 _11 June 2021_
 - Bug fix to correctly generate a stereo track for non-4K movies with conditions. Swapped `if [ ${str05VideoHeight}="2160" ]` for `if [ ${str05VideoHeight} -eq 2160 ]`
