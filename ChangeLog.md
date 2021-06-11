@@ -1,5 +1,16 @@
 # Change Log #
 
+## 0.35 ##
+_11 June 2021_
+- Bug fix to correctly generate a stereo track for non-4K movies with conditions. Swapped `if [ ${str05VideoHeight}="2160" ]` for `if [ ${str05VideoHeight} -eq 2160 ]`
+- Swapped over to new IP ranges from NAS mounts
+- Change `--target 576p=1500` to `--target 1500` for DVDs as this height isn't supported by `other-transcode`
+- Add in an option for 480p updated targets
+- Changed the methodology to extract forced subtitle checks from using the stream title ("Forced") to using the forced flag setting (`str05SubtitleForcedPresence` from `.disposition.forced`)
+- Added a new audio option to `--add-audio <Index>` for occasional usage whilst also maintaining mono|stereo|surround space (overriding the default stereo in `other-transcode`)
+
+
+
 ## 0.34 ##
 _2 February 2021_
 - Updates for `other-transcode` v0.7.0

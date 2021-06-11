@@ -2,7 +2,7 @@
 
 ###############################################################################
 # BlackAlert.sh                                                               #
-# Version 0.34                                                                #
+# Version 0.35                                                                #
 #                                                                             #
 # Copyright 2021 - Joe Hurley                                                 #
 #                                                                             #
@@ -22,7 +22,7 @@ DELAY=2
 
 echo "############################################################################################"
 echo "#                                                                                          #"
-echo "# BLACKALERT.SH (v0.34)                                                                    #"
+echo "# BLACKALERT.SH (v0.35)                                                                    #"
 echo "#                                                                                          #"
 echo "############################################################################################"
 
@@ -153,7 +153,7 @@ Current Working Directory
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/192.168.0.120/Engine_Room
+  1. /Volumes/192.168.1.120/Engine_Room
   2. /Volumes/Media/Engine_Room
   3. /mnt/e/Engine_Room
   0. Quit
@@ -167,7 +167,7 @@ _EOF_
   		if [[ $REPLY =~ ^[0-3]$ ]]; then
     	case $REPLY in
      	1)
-           	dirMacWorkDir="/Volumes/192.168.0.120/Engine_Room"
+           	dirMacWorkDir="/Volumes/192.168.1.120/Engine_Room"
           	break
           	;;
       	2)
@@ -575,6 +575,7 @@ Please select one of the following:
 	7. AUDIO Options
 		- Copy the main audio track (no audio transcoding)
 		- Copy all audio tracks (no audio transcoding)
+		- Add an additional audio track
 		- EAC-3 surround & AAC stereo/mono
 		- Enable DTS pass-through
 		- Keep AC-3 stereo
@@ -673,24 +674,25 @@ AUDIO OPTIONS
 
 Please select one of the following:
 
-	1. Copy the main audio track (no transcoding)
-	2. Copy all audio tracks (no transcoding)
-	3. EAC-3 surround & AAC stereo/mono
-	4. Enable DTS pass-through
-	5. Keep AC-3 stereo
-	6. Surround bitrate override
-	7. Stereo bitrate override
-	8. Mono bitrate override	 
-	9. Back
-	0. Quit
+	1.  Copy the main audio track (no transcoding)
+	2.  Copy all audio tracks (no transcoding)
+	3.  Add an additional audio track
+	4.  EAC-3 surround & AAC stereo/mono
+	5.  Enable DTS pass-through
+	6.  Keep AC-3 stereo
+	7.  Surround bitrate override
+	8.  Stereo bitrate override
+	9.  Mono bitrate override	 
+	10. Back
+	0.  Quit
 
 =================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-9] > "
+	  read -p "Enter selection [0-10] > "
 
-  		if [[ $REPLY =~ ^[0-9]$ ]]; then
+  		if [[ "$REPLY" =~ ^[0-9]+$ ]] && [ "$REPLY" -ge 1 ] && [ "$REPLY" -le 10 ]; then
     	case $REPLY in
      	1)
            	step4_ffprobe_tsv
@@ -704,35 +706,40 @@ _EOF_
           	;;
       	3)
       	  	step4_ffprobe_tsv
+      	  	step4_AddAdditionalAudioTrack
+          	continue
+          	;;          	
+      	4)
+      	  	step4_ffprobe_tsv
       	  	step4_EAC3plusAAC
           	continue
           	;;
-        4)
+        5)
       		step4_ffprobe_tsv
       	  	step4_EnableDTSPassthrough
       	  	continue
           	;;  
-        5)
+        6)
       		step4_ffprobe_tsv
       	  	step4_KeepAC3Stereo
           	continue
           	;; 
-        6)
+        7)
         	step4_ffprobe_tsv
       	  	step4_SurroundBitrateOverride
           	continue
           	;; 
-        7)
+        8)
             step4_ffprobe_tsv
       	  	step4_StereoBitrateOverride
           	continue
           	;;  
-        8)
+        9)
       		step4_ffprobe_tsv
       	  	step4_MonoBitrateOverride
           	continue
           	;;           	         
-        9)
+        10)
         	break
         	;;	
         0)
@@ -867,7 +874,11 @@ step4_jq_selectstream_command() {
 	jq -r --arg STREAM "$1" '["TYPE","INDEX","LANGUAGE","CODEC","PROFILE","HEIGHT","CHANNEL LAYOUT","BITRATE","NO OF ELEMENTS","DEFAULT","FORCED FLAG","TITLE"], (.streams[] | select(.codec_type==$STREAM) | [.codec_type, .index, .tags.language, .codec_name, .profile, .height, .channel_layout, .tags."BPS-eng", .tags."NUMBER_OF_FRAMES-eng",.disposition.default, .disposition.forced, .tags.title ]) | @tsv ' | sed 's/\"//g' | sed -E 's/'$(printf '\t')'/'$(printf ' \t')'/g' | column -t -s $'\t'
 }
 
+step5_jq_selectadditionalAudio_command() {
 
+	jq -r --argjson ADD_AUDIO "$1" '.streams[] | select(.index==$ADD_AUDIO) | .channel_layout' | sort -u
+
+}
 
 
 step4_ffprobe_tsv() {
@@ -1454,6 +1465,53 @@ step4_copy_all_audio_tracks() {
 }
 
 
+step4_AddAdditionalAudioTrack() {
+
+	# Adds the --add-audio <ID>=<sound space> to the array
+	
+	# Define the variables for this function
+	strAddAdditionalAudioTrack=""
+	strAdditionalAudioStreamNumber=""
+	REPLY=""
+	
+	strAdditionalAudioTrackArg1=$1
+
+	# Get presented with the audio-only options
+	echo ""
+	echo "######################################################################################################################################################"
+	echo ""
+	echo "$FILE"
+	echo ""
+	echo "######################################################################################################################################################"
+	echo ""
+
+	step4_ffprobe_command $FILE  | step4_jq_selectstream_command audio
+	
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""
+
+	while true
+    do
+    	read -p "Please choose an audio stream to add:  index [${strStartingAudioStreamIndexNo}-${strEndingAudioStreamIndexNo}] > " Add_number
+    	[[ $Add_number =~ ^[0-9]+$ ]] || { echo "Enter a valid number"; continue; }
+  		if ((Add_number >= ${strStartingAudioStreamIndexNo} && Add_number <= ${strEndingAudioStreamIndexNo}))
+  		then
+    		break
+  		else
+    		echo "Please chose a valid steam index number, try again"
+  		fi
+	done
+    
+	strAdditionalAudioStreamNumber=$Add_number
+	
+	echo "AdditionalAudioStreamNumber,${strAdditionalAudioStreamNumber}" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	step4_ffprobe_tsv	
+
+}
+
+
+
+
 
 step4_EAC3plusAAC() {
 
@@ -1928,6 +1986,7 @@ _EOF_
   		str05MonoBitrateOverride=""
   		str05UseQSV=""
   		str05UseVideoToolBox=""
+  		str05AddAdditionalAudioTrack=""
   		
 
   		
@@ -1966,7 +2025,8 @@ _EOF_
 		str05SubtitleEnglishPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep -i "English" | wc -l )
 		str05SubtitleSDHPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep "SDH" | wc -l )
 		str05SubtitleCommentaryPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep -i "Commentary" | wc -l )
-		str05SubtitleForcedPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep -i "Forced" | wc -l )
+		#str05SubtitleForcedPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .tags.title' | grep -i "Forced" | wc -l )
+		str05SubtitleForcedPresence=$( echo "$str05FfprobeOutput" | jq -r '.streams[] | select(.codec_type=="subtitle") | .disposition.forced' | grep -i "1" | wc -l )
 
 
 		# Assumptions 
@@ -1999,6 +2059,7 @@ _EOF_
   			str05MonoBitrateOverride=$( grep MonoBitrateOverride $str05OverrideFile | cut -d"," -f2 2>&1)
   			str05UseQSV=$( grep UseQSV $str05OverrideFile | cut -d"," -f2 2>&1)
   			str05UseVideoToolBox=$( grep UseVideoToolBox $str05OverrideFile | cut -d"," -f2 2>&1)
+  			str05AddAdditionalAudioTrack=$( grep AdditionalAudioStreamNumber $str05OverrideFile | cut -d"," -f2 2>&1)
 		fi	
 
 		# By default, the Windows E: location (set in strWinFile) will be used to specify the source path in other-transcode commands
@@ -2051,6 +2112,7 @@ _EOF_
    		# 1080p        6000     8000
    		# 720p         3000     4000
    		# 576p         1500     2000
+   		# 480p         1500     2000
    		
    		# CORE Defaults
    		# ---------------------------------------------------
@@ -2078,16 +2140,32 @@ _EOF_
    				shift
    				;;				
      		576)
-   				strHEVCVideoBitRate="1500"
+   				strHEVCVideoBitRate="2000"
+   				strH264VideoBitRate="3000"
+   				shift
+   				;;
+   			480)
+   			   	strHEVCVideoBitRate="1500"
    				strH264VideoBitRate="2000"
    				shift
    				;;
+   				
       		*)
    				strHEVCVideoBitRate="6000"
    				strH264VideoBitRate="8000"
    				shift
    				;;
    		esac		 			
+ 
+ 
+ 		if [[ "$str05VideoHeight" = "576" ]]
+ 		then
+ 			str05H264Target="${strH264VideoBitRate}"
+ 			str05HEVCTarget="${strHEVCVideoBitRate}"
+ 		else
+ 			str05H264Target="${str05VideoHeight}p=${strH264VideoBitRate}"
+ 			str05HEVCTarget="${str05VideoHeight}p=${strHEVCVideoBitRate}" 		
+ 		fi
    				
 
 		if [[ "$str05UseVideoToolBox" = "true" ]]
@@ -2095,19 +2173,19 @@ _EOF_
 		
 			if [[ "$str05X264AVBRActive" = "true" ]]
 				then
-				arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" $strX264AVBRDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
+				arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" $strX264AVBRDefaults --target ${str05H264Target} )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
 			 	arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" --copy-video )
 			else
-				arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" $strVTDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate} ) 
+				arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" $strVTDefaults --target ${str05HEVCTarget} ) 
 			fi
 		
    		else 
 			if [[ "$str05X264AVBRActive" = "true" ]]
 				then
-				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strX264AVBRDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
+				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strX264AVBRDefaults --target ${str05H264Target} )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
@@ -2116,18 +2194,18 @@ _EOF_
 			elif [[ "$str05UseQSV" = "true" ]]
 				then
 				#arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
-				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
+				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05H264Target} )
 
 			elif [[ "$str05DefaultVideoCodec" = "vc1" ]]
 				then
 					if [[ "$str05VC1OverrideQSVDefaultsWith10bitHEVC" = "true" ]]
 					then
-						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate})
+						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --target ${str05HEVCTarget})
 					else
-						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05VideoHeight}p=${strH264VideoBitRate} )
+						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05H264Target} )
 					fi		
 			else	
-				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --target ${str05VideoHeight}p=${strHEVCVideoBitRate})
+				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --target ${str05HEVCTarget})
 			fi		
 		fi
 
@@ -2309,16 +2387,15 @@ _EOF_
 					arrOtherTranscodeRbCommand+=()
 #				elif [ "$str05DefaultAudioTrackChannelLayout" = "3.0" ]
 				elif [ "$str05DefaultAudioTrackChannels" = "3" ]
-
 				then
 					arrOtherTranscodeRbCommand+=()
 				else
 				
-					if [ $str05VideoHeight="2160" ]
+					if [ ${str05VideoHeight} -eq 2160 ]
 					then
 						arrOtherTranscodeRbCommand+=()
 					else
-					  arrOtherTranscodeRbCommand+=(--add-audio ${str05DefaultAudioTrackIndex}=stereo)	
+					  arrOtherTranscodeRbCommand+=(--add-audio ${str05DefaultAudioTrackIndex}=stereo )
 					fi		
 							
 				fi	
@@ -2397,6 +2474,35 @@ _EOF_
 				esac	
 			fi
 		fi	
+
+
+		# ADD Any additional audio tracks specified
+		# ---------------------------------------------------
+		# Once the audio track number has been identified, we need to check the audio width
+		# so that the correct =mono|stereo|surround can be added to bypass the stereo default in other-transcode.
+
+		if [ "$str05AddAdditionalAudioTrack" != "" ]
+		then
+			# In order to use variables within jq, you need to separate them into a function (step5_jq_selectadditionalAudio_command) instead of being in-line as it fails to expand the jq variable.
+			str05AddAdditionalAudioTrackChannelLayout=$( step4_ffprobe_command $FILE | step5_jq_selectadditionalAudio_command $str05AddAdditionalAudioTrack )
+	
+			case $str05AddAdditionalAudioTrackChannelLayout in
+			
+				"4.0"|"5.0(side)"|"5.1(side)"|"6.1"|"7.1") 
+					arrOtherTranscodeRbCommand+=(--add-audio ${str05AddAdditionalAudioTrack}=surround )
+					;;
+				"3.0"|stereo)
+					arrOtherTranscodeRbCommand+=(--add-audio ${str05AddAdditionalAudioTrack}=stereo )
+					;;
+				mono)
+					arrOtherTranscodeRbCommand+=(--add-audio ${str05AddAdditionalAudioTrack} )
+					;;
+				*)	
+					arrOtherTranscodeRbCommand+=(--add-audio ${str05AddAdditionalAudioTrack} )
+					;;	
+			esac	
+		fi	
+
 
 
 		
@@ -2710,7 +2816,7 @@ Raw Original MKV Directory
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/192.168.0.120/Engine_Room/04_ReadyForTranscoding
+  1. /Volumes/192.168.1.120/Engine_Room/04_ReadyForTranscoding
   2. /Volumes/Media/Engine_Room/04_ReadyForTranscoding
   3. /mnt/e/Engine_Room/04_ReadyForTranscoding
   0. Quit
@@ -2724,7 +2830,7 @@ _EOF_
   		if [[ $REPLY =~ ^[0-3]$ ]]; then
     	case $REPLY in
      	1)
-           	dirReadyForTranscoding="/Volumes/192.168.0.120/Engine_Room/04_ReadyForTranscoding"
+           	dirReadyForTranscoding="/Volumes/192.168.1.120/Engine_Room/04_ReadyForTranscoding"
           	break
           	;;
       	2)
