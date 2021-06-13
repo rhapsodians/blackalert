@@ -2,7 +2,12 @@
 
 ## 0.36 ##
 _11 June 2021_
-- Updates for `other-transcode` v0.9.0
+- Updates for `other-transcode` v0.9.0 including:
+  - New 10-bit HEVC default used "--hevc --nvenc-recommended --nvenc-cq 27"
+  - Optional use of the previous 10-bit HEVC default "--hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32"
+  - Addition of optional H.264 version of the new CQ 27 formula as an override for QSV
+  - Updated audio options from `other-transcode 0.9.0` (e.g. replacement of `--eac3 --aac-stereo` with `--eac3-aac` and replacing `--aac-stereo` with `--aac-only`
+  - Added an optional override to the CQ value (27) from 1-51
 
 
 

@@ -589,6 +589,9 @@ Please select one of the following:
 		- VideoToolbox h/w transcoding (Mac)
 		- Disable forced subtitle burn-in
 		- VC-1: 10-bit HEVC instead of 8-bit QSV
+		- Use NVEnc CQ27 H.264 instead of HEVC or QSV encoding
+		- Use NVEnc Preset 5 for 10-bit HEVC encoding
+		- Provide an alternative Constant Quality (CQ) value	
 	9. Next
 	0. Quit
 
@@ -769,22 +772,25 @@ MORE OPTIONS
 
 Please select one of the following:
 
-	1. Copy original video (no video transcoding)
-	2. Create single/unified mkvpropedit script
-	3. Use --x264-avbr software encoding
-	4. VideoToolbox h/w transcoding (Mac)
-	5. Disable forced subtitle burn-in
-	6. VC-1: 10-bit HEVC instead of 8-bit QSV
-	7. Back
-	0. Quit
+	1.  Copy original video (no video transcoding)
+	2.  Create single/unified mkvpropedit script
+	3.  Use --x264-avbr software encoding
+	4.  VideoToolbox h/w transcoding (Mac)
+	5.  Disable forced subtitle burn-in
+	6.  VC-1: 10-bit HEVC instead of 8-bit QSV
+	7.  Use NVEnc CQ27 H.264 instead of HEVC or QSV encoding
+	8.  Use NVEnc Preset 5 for 10-bit HEVC encoding
+	9.  Provide an alternative Constant Quality (CQ) value	
+	10. Back
+	0.  Quit
 
 =================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-7] > "
+	  read -p "Enter selection [0-10] > "
 
-  		if [[ $REPLY =~ ^[0-7]$ ]]; then
+  		if [[ "$REPLY" =~ ^[0-9]+$ ]] && [ "$REPLY" -ge 1 ] && [ "$REPLY" -le 10 ]; then
     	case $REPLY in
      	1)
            	step4_ffprobe_tsv
@@ -816,7 +822,19 @@ _EOF_
         	step4_VC1OverrideQSVDefaultsWith10bitHEVC
         	continue
         	;;
-        7)
+        7)  step4_ffprobe_tsv
+        	step4_NVEncCQ27H264
+        	continue
+        	;;
+        8)  step4_ffprobe_tsv
+        	step4_NVEncHEVC10Preset5
+        	continue
+        	;;  
+        9)  step4_ffprobe_tsv
+        	step4_NVEncNewCQValue
+        	continue
+        	;;               	
+        10)
         	break
         	;;	
         0)
@@ -830,8 +848,6 @@ _EOF_
 	done
 
 }
-
-
 
 
 
@@ -1583,6 +1599,55 @@ step4_VC1OverrideQSVDefaultsWith10bitHEVC() {
 
 
 
+step4_NVEncCQ27H264() {
+
+	echo "NVEncCQ27H264,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo "NVEnc encoding with Constant Qualtiy (CQ) 27 for H.264 will be used"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""	
+
+}
+
+step4_NVEncHEVC10Preset5() {
+
+	echo "NVEncHEVC10Preset5,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo "NVEnc encoding with 10-bit HEVC Preset 5 will be used"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""	
+
+}
+
+step4_NVEncNewCQValue() {
+
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""
+
+	while true
+    do
+    	read -p "Please choose a new Constant Quality value to be used (1-51): " NVEncNewCQValue
+    	[[ $NVEncNewCQValue =~ ^[0-9]+$ ]] || { echo "Enter a valid number"; continue; }
+  		if ((${NVEncNewCQValue} >= 1 && ${NVEncNewCQValue} <= 51))
+  		then
+    		break
+  		else
+    		echo "Please chose a valid constant quality target value, try again"
+  		fi
+	done
+    
+	echo "NVEncNewCQValue,$NVEncNewCQValue" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo ""
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo "$NVEncNewCQValue will be used as the target CQ value"
+	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
+	echo ""	
+
+}
+
+
 
 step4_SurroundBitrateOverride() {
 
@@ -1987,6 +2052,9 @@ _EOF_
   		str05UseQSV=""
   		str05UseVideoToolBox=""
   		str05AddAdditionalAudioTrack=""
+  		str05NVEncCQ27H264=""
+  		str05NVEncHEVC10Preset5=""
+  		str05NVEncNewCQValue=""
   		
 
   		
@@ -2052,6 +2120,9 @@ _EOF_
 			str05EAC3SurroundAACStereoMono=$( grep EAC3SurroundAACStereoMono $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05DisableForcedSubtitleAutoBurnIn=$( grep DisableForcedSubtitleAutoBurnIn $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05VC1OverrideQSVDefaultsWith10bitHEVC=$( grep VC1OverrideQSVDefaultsWith10bitHEVC $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05NVEncCQ27H264=$( grep NVEncCQ27H264 $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05NVEncHEVC10Preset5=$( grep NVEncHEVC10Preset5 $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05NVEncNewCQValue=$( grep NVEncNewCQValue $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05EnableDTSPassthrough=$( grep EnableDTSPassthrough $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05KeepAC3Stereo=$( grep KeepAC3Stereo $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05SurroundBitrateOverride=$( grep SurroundBitrateOverride $str05OverrideFile | cut -d"," -f2 2>&1)
@@ -2113,60 +2184,112 @@ _EOF_
    		# 720p         3000     4000
    		# 576p         1500     2000
    		# 480p         1500     2000
+   		#
+   		# 2021-06-21
+   		# With other-transcode 0.9.0, the default 10-bit HEVC is moving from "--hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32"
+   		# to the constant quality formula:  "--hevc --nvenc-recommended --nvenc-cq 27".
+   		# Don's default is to use CQ=28 which looks really good but I've chosen 27 to give a little more kbit/sec to ensure future edge cases            
+   		# are more likely to be accommodated.
+   		#
+   		# The older "--hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32" will also be available as an option
+   		#
    		
    		# CORE Defaults
    		# ---------------------------------------------------
    		strX264AVBRDefaults="--x264-avbr --crop auto"
    		strVTDefaults="--vt --hevc"
    		strQSVDefaults="--qsv --cuda --preset veryslow --decode all"
-   		strHEVCDefaults="--hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32"
+   		
+   		if [[ "$str05NVEncNewCQValue" = "" ]]
+   		then
+   			strHEVCDefaults="--hevc --nvenc-recommended --nvenc-cq 27"
+   		else
+			strHEVCDefaults="--hevc --nvenc-recommended --nvenc-cq $str05NVEncNewCQValue"
+   		fi
+   		   		
+   		strHEVCPreset5Defaults="--hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32"
    		strMaxMuxingQueue="--max-muxing-queue-size 1024"   		
    		
+  		# For both QSV (H.264) and HEVC Preset 10, I'm increasing the default bitrates
+  		
+     	if [[ "$str05UseQSV" = "true" ]]
+   		then
    		
-   		case $str05VideoHeight in
-   			2160)
-   				strHEVCVideoBitRate="12000"
-   				strH264VideoBitRate="16000"
-   				shift
-   				;;
-   			1080)
-   				strHEVCVideoBitRate="6000"
-   				strH264VideoBitRate="8000"
-   				shift
-   				;;
-      		720)
-   				strHEVCVideoBitRate="3000"
-   				strH264VideoBitRate="4000"
-   				shift
-   				;;				
-     		576)
-   				strHEVCVideoBitRate="2000"
-   				strH264VideoBitRate="3000"
-   				shift
-   				;;
-   			480)
-   			   	strHEVCVideoBitRate="1500"
-   				strH264VideoBitRate="2000"
-   				shift
-   				;;
-   				
-      		*)
-   				strHEVCVideoBitRate="6000"
-   				strH264VideoBitRate="8000"
-   				shift
-   				;;
-   		esac		 			
- 
- 
- 		if [[ "$str05VideoHeight" = "576" ]]
- 		then
- 			str05H264Target="${strH264VideoBitRate}"
- 			str05HEVCTarget="${strHEVCVideoBitRate}"
- 		else
- 			str05H264Target="${str05VideoHeight}p=${strH264VideoBitRate}"
- 			str05HEVCTarget="${str05VideoHeight}p=${strHEVCVideoBitRate}" 		
- 		fi
-   				
+ 	  		case $str05VideoHeight in
+ 	  			2160)
+ 	  				strH264VideoBitRate="16000"
+ 	  				shift
+ 	  				;;
+ 	  			1080)
+ 	  				strH264VideoBitRate="8000"
+ 	  				shift
+ 	  				;;
+ 	     		720)
+ 	  				strH264VideoBitRate="4000"
+ 	  				shift
+ 	  				;;				
+ 	    		576)
+ 	  				strH264VideoBitRate="3000"
+ 	  				shift
+ 	  				;;
+ 	  			480)
+ 	  				strH264VideoBitRate="2000"
+ 	  				shift
+ 	  				;;
+ 	     		*)
+ 	  				strH264VideoBitRate="8000"
+ 	  				shift
+ 	  				;;
+ 	  		esac		 			
+ 	
+ 			if [[ "$str05VideoHeight" = "576" ]]
+ 			then
+ 				str05H264Target="${strH264VideoBitRate}"
+ 			else
+ 				str05H264Target="${str05VideoHeight}p=${strH264VideoBitRate}"
+ 			fi
+   		fi
+  
+   		
+   		if [[ "$str05NVEncHEVC10Preset5" = "true" ]]
+   		then
+   		
+ 	  		case $str05VideoHeight in
+ 	  			2160)
+ 	  				strHEVCVideoBitRate="12000"
+ 	  				shift
+ 	  				;;
+ 	  			1080)
+ 	  				strHEVCVideoBitRate="6000"
+ 	  				shift
+ 	  				;;
+ 	     		720)
+ 	  				strHEVCVideoBitRate="3000"
+ 	  				shift
+ 	  				;;				
+ 	    		576)
+ 	  				strHEVCVideoBitRate="2000"
+ 	  				shift
+ 	  				;;
+ 	  			480)
+ 	  			   	strHEVCVideoBitRate="1500"
+ 	  				shift
+ 	  				;;
+ 	     		*)
+ 	  				strHEVCVideoBitRate="6000"
+ 	  				shift
+ 	  				;;
+ 	  		esac		 			
+ 	
+ 	
+ 			if [[ "$str05VideoHeight" = "576" ]]
+ 			then
+ 				str05HEVCTarget="${strHEVCVideoBitRate}"
+ 			else
+ 				str05HEVCTarget="${str05VideoHeight}p=${strHEVCVideoBitRate}" 		
+ 			fi
+   		fi		
+
 
 		if [[ "$str05UseVideoToolBox" = "true" ]]
 		then
@@ -2193,7 +2316,6 @@ _EOF_
 			 	
 			elif [[ "$str05UseQSV" = "true" ]]
 				then
-				#arrOtherTranscodeRbCommand=(call other-transcode \"${strWinFile}\" --qsv --hevc )
 				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05H264Target} )
 
 			elif [[ "$str05DefaultVideoCodec" = "vc1" ]]
@@ -2204,8 +2326,11 @@ _EOF_
 					else
 						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05H264Target} )
 					fi		
+			elif [[ "$str05NVEncHEVC10Preset5" = "true" ]]
+				then
+						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCPreset5Defaults --target ${str05HEVCTarget})
 			else	
-				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --target ${str05HEVCTarget})
+				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults)
 			fi		
 		fi
 
@@ -2250,14 +2375,14 @@ _EOF_
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrOtherTranscodeRbCommand+=(--eac3 --aac-stereo)	
+						arrOtherTranscodeRbCommand+=(--eac3-aac)	
 					fi	
 					;;
 				eac3)
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrOtherTranscodeRbCommand+=(--eac3 --aac-stereo)
+						arrOtherTranscodeRbCommand+=(--eac3-aac)
 					else
 						arrOtherTranscodeRbCommand+=(--eac3 )	
 					fi	
@@ -2266,21 +2391,21 @@ _EOF_
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrOtherTranscodeRbCommand+=(--eac3 --aac-stereo)
+						arrOtherTranscodeRbCommand+=(--eac3-aac)
 					fi	
 					;;	
 				pcm_s24le)
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrOtherTranscodeRbCommand+=(--eac3 --aac-stereo)
+						arrOtherTranscodeRbCommand+=(--eac3-aac)
 					fi	
 					;;	
 				aac)
 #					if [ "$str05DefaultAudioTrackChannelLayout" != "stereo" ] || [ "$str05DefaultAudioTrackChannelLayout" != "mono" ]
 					if [ "$str05DefaultAudioTrackChannels" != "1" ] || [ "$str05DefaultAudioTrackChannels" != "2" ] || [ "$str05DefaultAudioTrackChannels" != "3" ]
 					then
-						arrOtherTranscodeRbCommand+=(--aac-stereo)	
+						arrOtherTranscodeRbCommand+=(--aac-only)	
 					fi	
 					;;	
 				
@@ -2692,6 +2817,7 @@ _EOF_
   		unset str05UseVideoToolBox
   		unset str05DefaultVideoCodec
   		unset str05VC1OverrideQSVDefaultsWith10bitHEVC
+  		unset str05NVEncHEVC10Preset5
 		
         # When batch mode is on, no file moves should be made
         
