@@ -1,7 +1,7 @@
 # Change Log #
 
 ## 0.36 ##
-_11 June 2021_
+_13 June 2021_
 - Updates for `other-transcode` v0.9.0 including:
   - New 10-bit HEVC default used "--hevc --nvenc-recommended --nvenc-cq 27"
   - Optional use of the previous 10-bit HEVC default "--hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32"
