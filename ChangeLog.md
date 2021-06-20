@@ -1,5 +1,11 @@
 # Change Log #
 
+## 0.37 ##
+_20 June 2021_
+- TBC
+
+
+
 ## 0.36 ##
 _20 June 2021_
 - Updates for `other-transcode` v0.9.0 including:
