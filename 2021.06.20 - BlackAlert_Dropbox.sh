@@ -119,7 +119,7 @@ pre_setup_checks() {
 	dirArchive="$dirMacWorkDir/06_Archive"
 	dirPretend_Archive1="$dirMacWorkDir/Pretend_Archive-1"
 	dirPretend_Archive2="$dirMacWorkDir/Pretend_Archive-2"
-	dirPretend_OneDrive="$dirMacWorkDir/Pretend_OneDrive"
+	dirPretend_Dropbox="$dirMacWorkDir/Pretend_Dropbox"
 	dirPretend_MediaForNAS="$dirMacWorkDir/Pretend_Media_for_NAS"
 	dirPretend_Plex="$dirMacWorkDir/Pretend_Plex"
 	
@@ -362,7 +362,7 @@ setup_checks() {
 
 	if [ "$strEnv" = "test" ]
 	then
-		arrDirArray+=($dirPretend_Archive1 $dirPretend_Archive2 $dirPretend_OneDrive $dirPretend_MediaForNAS $dirPretend_Plex)
+		arrDirArray+=($dirPretend_Archive1 $dirPretend_Archive2 $dirPretend_Dropbox $dirPretend_MediaForNAS $dirPretend_Plex)
 	fi
 
 		
@@ -1953,14 +1953,14 @@ other-transcode_commands() {
 
 
 -------------------------------------------------------------------------------
-OneDrive Override Set-up
+Dropbox Override Set-up
 -------------------------------------------------------------------------------
 
 Please select one of the following:
 ===============================================================================
 
-  1. /Users/joe/OneDrive/Transcoding_Output/Overrides
-  2. /mnt/c/Users/Joe/OneDrive/Transcoding_Output/Overrides
+  1. /Users/joe/Dropbox/Transcoding_Output/Overrides
+  2. /mnt/c/Users/Joe/Dropbox/Transcoding_Output/Overrides
   0. Quit
 	
 ===============================================================================
@@ -1972,11 +1972,11 @@ _EOF_
   		if [[ $REPLY =~ ^[0-2]$ ]]; then
     	case $REPLY in
      	1)
-           	dirOneDriveBatchOverridesDir="/Users/joe/OneDrive/Transcoding_Output/Overrides"
+           	dirDropboxBatchOverridesDir="/Users/joe/Dropbox/Transcoding_Output/Overrides"
           	break
           	;;
       	2)
-      	  	dirOneDriveBatchOverridesDir="/mnt/c/Users/Joe/OneDrive/Transcoding_Output/Overrides"
+      	  	dirDropboxBatchOverridesDir="/mnt/c/Users/Joe/Dropbox/Transcoding_Output/Overrides"
           	break
           	;;
         0)
@@ -1991,7 +1991,7 @@ _EOF_
 
 	echo ""
 	echo ""
-	echo "OneDrive Overrides Directory:  	$dirOneDriveBatchOverridesDir"
+	echo "Dropbox Overrides Directory:  	$dirDropboxBatchOverridesDir"
 	echo "-------------------------------------------------------------------------------"
 	echo ""
 	echo ""
@@ -2014,7 +2014,7 @@ _EOF_
 			# BatchMode is ACTIVE		
 			dirWinWorkDir="G:\Movies"
 			strWinFile="${dirWinWorkDir}\\${str05File}"
-			strBatchOverrideLocation="$dirOneDriveBatchOverridesDir"
+			strBatchOverrideLocation="$dirDropboxBatchOverridesDir"
 		else
 			strWinFile="${dirWinWorkDir}\\04_ReadyForTranscoding\\${str05File}"
 
@@ -2911,7 +2911,7 @@ post_setup_checks() {
 	echo "Original RAW Content Directory:  	$dirReadyForTranscoding"
 	echo "Transcoded Content Directory:  	$dirTranscodedWorkDir"
 	echo "Plex Directory:  	$dirPlexDir"
-	echo "OneDrive Logs Directory:  	$dirOneDriveLogsDir"
+	echo "Dropbox Logs Directory:  	$dirDropboxLogsDir"
 	echo "Media Directory:  	$dirMediaDir"
 	echo "-------------------------------------------------------------------------------"
 	echo ""
@@ -3110,14 +3110,14 @@ while true; do
 
 
 -------------------------------------------------------------------------------
-OneDrive Logs Set-up
+Dropbox Logs Set-up
 -------------------------------------------------------------------------------
 
 Please select one of the following:
 ===============================================================================
 
-  1. /Users/joe/OneDrive/Transcoding_Output
-  2. /mnt/c/Users/Joe/OneDrive/Transcoding_Output
+  1. /Users/joe/Dropbox/Transcoding_Output
+  2. /mnt/c/Users/Joe/Dropbox/Transcoding_Output
   0. Quit
 	
 ===============================================================================
@@ -3129,11 +3129,11 @@ _EOF_
   		if [[ $REPLY =~ ^[0-2]$ ]]; then
     	case $REPLY in
      	1)
-           	dirOneDriveLogsDir="/Users/joe/OneDrive/Transcoding_Output"
+           	dirDropboxLogsDir="/Users/joe/Dropbox/Transcoding_Output"
           	break
           	;;
       	2)
-      	  	dirOneDriveLogsDir="/mnt/c/Users/Joe/OneDrive/Transcoding_Output"
+      	  	dirDropboxLogsDir="/mnt/c/Users/Joe/Dropbox/Transcoding_Output"
           	break
           	;;
         0)
@@ -3148,7 +3148,7 @@ _EOF_
 
 	echo ""
 	echo ""
-	echo "OneDrive Logs Directory:  	$dirOneDriveLogsDir"
+	echo "Dropbox Logs Directory:  	$dirDropboxLogsDir"
 	echo "-------------------------------------------------------------------------------"
 	echo ""
 	echo ""
@@ -3412,14 +3412,14 @@ while true; do
 
 
 -------------------------------------------------------------------------------
-OneDrive Logs Set-up
+Dropbox Logs Set-up
 -------------------------------------------------------------------------------
 
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/3TB/Engine_Room-TEST/Pretend_OneDrive/Transcoding_Output
-  2. /mnt/e/Engine_Room-TEST/Pretend_OneDrive/Transcoding_Output
+  1. /Volumes/3TB/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output
+  2. /mnt/e/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output
   0. Quit
 	
 ===============================================================================
@@ -3431,11 +3431,11 @@ _EOF_
   		if [[ $REPLY =~ ^[0-2]$ ]]; then
     	case $REPLY in
      	1)
-           	dirOneDriveLogsDir="/Volumes/3TB/Engine_Room-TEST/Pretend_OneDrive/Transcoding_Output"
+           	dirDropboxLogsDir="/Volumes/3TB/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output"
           	break
           	;;
       	2)
-      	  	dirOneDriveLogsDir="/mnt/e/Engine_Room-TEST/Pretend_OneDrive/Transcoding_Output"
+      	  	dirDropboxLogsDir="/mnt/e/Engine_Room-TEST/Pretend_Dropbox/Transcoding_Output"
           	break
           	;;
         0)
@@ -3450,7 +3450,7 @@ _EOF_
 
 	echo ""
 	echo ""
-	echo "OneDrive Logs Directory:  	$dirOneDriveLogsDir"
+	echo "Dropbox Logs Directory:  	$dirDropboxLogsDir"
 	echo "-------------------------------------------------------------------------------"
 	echo ""
 	echo ""
@@ -3803,14 +3803,14 @@ create_folder_and_move() {
 
 
 ##########################################################################
-# POST-STEP03 - Copy generated commands to OneDrive                       #
+# POST-STEP03 - Copy generated commands to Dropbox                       #
 ##########################################################################
 
 
 copy_commands_to_media() {
 
 	echo "*******************************************************************************"
-	echo "Starting Step 3 - Copy generated commands to OneDrive" 
+	echo "Starting Step 3 - Copy generated commands to Dropbox" 
 	echo ""
 	echo ""
 
@@ -3821,8 +3821,8 @@ copy_commands_to_media() {
 	dirSourceCommands=$( echo $dirReadyForTranscoding | sed 's/\/04_ReadyForTranscoding/\/03_Outbox\/Commands/g' )
 
 	# Destination Directories
-	dirDestinationCommands="$dirOneDriveLogsDir/Commands"
-	dirDestinationOverrides="$dirOneDriveLogsDir/Overrides"
+	dirDestinationCommands="$dirDropboxLogsDir/Commands"
+	dirDestinationOverrides="$dirDropboxLogsDir/Overrides"
 	
 	cd $dirSourceCommands
 
@@ -3912,13 +3912,13 @@ copy_commands_to_media() {
 
 
 ##########################################################################
-# POST-STEP04 - Copy generated summary folders to OneDrive                #
+# POST-STEP04 - Copy generated summary folders to Dropbox                #
 ##########################################################################
 
 copy_summaries_to_media() {
 
 	echo "*******************************************************************************"
-	echo "Starting Step 4 - Copy generated summary folders to OneDrive" 
+	echo "Starting Step 4 - Copy generated summary folders to Dropbox" 
 	echo ""
 	echo ""
 
@@ -3928,7 +3928,7 @@ copy_summaries_to_media() {
 	dirSourceSummaries=$( echo $dirReadyForTranscoding | sed 's/\/04_ReadyForTranscoding/\/03_Outbox\/Summaries/g' )
 	
 	# Destination Directory
-	dirDestinationSummaries="$dirOneDriveLogsDir/Summaries"
+	dirDestinationSummaries="$dirDropboxLogsDir/Summaries"
 	
 	cd $dirSourceSummaries
 			
@@ -3973,13 +3973,13 @@ copy_summaries_to_media() {
 
 
 ##########################################################################
-# POST-STEP05 - Copy transcoded logs to OneDrive                          #
+# POST-STEP05 - Copy transcoded logs to Dropbox                          #
 ##########################################################################
 
 copy_transcoded_log_to_media() {
 
 	echo "*******************************************************************************"
-	echo "Starting Step 5 - Copy transcoded logs to OneDrive" 
+	echo "Starting Step 5 - Copy transcoded logs to Dropbox" 
 	echo ""
 	echo ""
 
@@ -3989,7 +3989,7 @@ copy_transcoded_log_to_media() {
 	dirSourceTranscodedLog="$dirTranscodedWorkDir"
 	
 	# Destination commands folder 
-	dirDestinationCommands="$dirOneDriveLogsDir/Commands"
+	dirDestinationCommands="$dirDropboxLogsDir/Commands"
 	
 	cd $dirSourceTranscodedLog
 			
@@ -4027,7 +4027,7 @@ copy_transcoded_log_to_media() {
 		esac
 		
 		# Destination Directory
-		dirDestinationTranscodedLog="${dirOneDriveLogsDir}/${dirP05LogDir}"
+		dirDestinationTranscodedLog="${dirDropboxLogsDir}/${dirP05LogDir}"
 		
 		
 		if [ ! -d $dirDestinationTranscodedLog ]

@@ -1,5 +1,17 @@
 # Change Log #
 
+## 0.36 ##
+_20 June 2021_
+- Updates for `other-transcode` v0.9.0 including:
+  - New 10-bit HEVC default used "--hevc --nvenc-recommended --nvenc-cq 27"
+  - Optional use of the previous 10-bit HEVC default "--hevc --preset p5 --nvenc-spatial-aq --nvenc-lookahead 32"
+  - Addition of optional H.264 version of the new CQ 27 formula as an override for QSV
+  - Updated audio options from `other-transcode 0.9.0` (e.g. replacement of `--eac3 --aac-stereo` with `--eac3-aac` and replacing `--aac-stereo` with `--aac-only`
+  - Added an optional override to the CQ value (27) from 1-51
+- Replaced Dropbox with OneDrive for all post-processing cloud storage
+
+
+
 ## 0.35 ##
 _11 June 2021_
 - Bug fix to correctly generate a stereo track for non-4K movies with conditions. Swapped `if [ ${str05VideoHeight}="2160" ]` for `if [ ${str05VideoHeight} -eq 2160 ]`
