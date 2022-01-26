@@ -2865,6 +2865,7 @@ other-transcode_commands_concatenate () {
 			cat $dirOutboxCommands/$str05CommandFileName >> $dirOutboxCommands/${strMacCommandsFile}
 		else
 			cat $dirOutboxCommands/$str05CommandFileName >> $dirOutboxCommands/${strWinCommandsFile}
+			cp $dirOutboxCommands/${strWinCommandsFile} $dirTranscoded/${strWinCommandsFile}
 		fi
 		
 		read line </dev/null
