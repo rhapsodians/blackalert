@@ -1,8 +1,8 @@
 # Change Log #
 
 ## 0.37 ##
-_20 June 2021_
-- TBC
+_26 January 2022_
+- switched to SSD (D:) for rips and transcodes
 
 
 
