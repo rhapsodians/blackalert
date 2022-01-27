@@ -3000,7 +3000,7 @@ Transcoded Output Directory Set-up
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/D/05_Transcoded
+  1. /Volumes/192.168.1.120/Engine_Room/05_Transcoded
   2. /Volumes/Media/Engine_Room/05_Transcoded
   3. /mnt/d/Engine_Room/05_Transcoded
   0. Quit
@@ -3014,7 +3014,7 @@ _EOF_
   		if [[ $REPLY =~ ^[0-5]$ ]]; then
     	case $REPLY in
      	1)
-           	dirTranscodedWorkDir="/Volumes/D/05_Transcoded"
+           	dirTranscodedWorkDir="/Volumes/192.168.1.120/Engine_Room/05_Transcoded"
           	break
           	;;
       	2)
