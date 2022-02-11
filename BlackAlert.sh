@@ -4,7 +4,7 @@
 # BlackAlert.sh                                                               #
 # Version 0.37                                                                #
 #                                                                             #
-# Copyright 2021 - Joe Hurley                                                 #
+# Copyright 2022 - Joe Hurley                                                 #
 #                                                                             #
 ###############################################################################
 #                                                                             #
@@ -585,10 +585,10 @@ Please select one of the following:
 	8. MORE Options
 		- Copy original video (no video transcoding)
 		- Create single/unified mkvpropedit script
-		- Use --x264-avbr software encoding
+		- Use --x264-cbr software encoding
 		- VideoToolbox h/w transcoding (Mac)
 		- Disable forced subtitle burn-in
-		- VC-1: 10-bit HEVC instead of 8-bit QSV
+		- VC-1: 10-bit HEVC instead of 8-bit QSV (hardware-only pipeline)
 		- Use NVEnc CQ27 H.264 instead of HEVC or QSV encoding
 		- Use NVEnc Preset 5 for 10-bit HEVC encoding
 		- Provide an alternative Constant Quality (CQ) value	
@@ -774,10 +774,10 @@ Please select one of the following:
 
 	1.  Copy original video (no video transcoding)
 	2.  Create single/unified mkvpropedit script
-	3.  Use --x264-avbr software encoding
+	3.  Use --x264-cbr software encoding
 	4.  VideoToolbox h/w transcoding (Mac)
 	5.  Disable forced subtitle burn-in
-	6.  VC-1: 10-bit HEVC instead of 8-bit QSV
+	6.  VC-1: 10-bit HEVC instead of 8-bit QSV (hardware-only pipeline)
 	7.  Use NVEnc CQ27 H.264 instead of HEVC or QSV encoding
 	8.  Use NVEnc Preset 5 for 10-bit HEVC encoding
 	9.  Provide an alternative Constant Quality (CQ) value	
@@ -804,7 +804,7 @@ _EOF_
           	;;
         3)
       	  	step4_ffprobe_tsv
-      	  	step4_usex264-avbr
+      	  	step4_usex264-cbr
           	continue
           	;;
     	4)
@@ -1889,7 +1889,7 @@ step4_tsv_cleanup() {
 
 
 
-step4_usex264-avbr() {
+step4_usex264-cbr() {
 
 	echo ""
 	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
@@ -1897,15 +1897,15 @@ step4_usex264-avbr() {
 	echo "***********************************************"
 	echo "***********************************************"
 	echo "*                                             *"
-	echo "*    x264-avbr software transcoding ACTIVE    *"
+	echo "*    x264-cbr software transcoding ACTIVE    *"
 	echo "*                                             *"
 	echo "***********************************************"
 	echo "***********************************************"
 	echo "" 
-	echo "Setting $FILE to be transcoded using the software x264-avbr option."
+	echo "Setting $FILE to be transcoded using the software x264-cbr option."
 	echo ""
 	
-	echo "X264AVBRActive,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo "X264CBRActive,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
 	
 	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 
@@ -2114,7 +2114,7 @@ _EOF_
 		if [ -f $str05OverrideFile ]
 		then
 			str05SetCopyVideo=$( grep SetCopyVideo $str05OverrideFile | cut -d"," -f2 2>&1)
-			str05X264AVBRActive=$( grep X264AVBRActive $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05X264CBRActive=$( grep X264CBRActive $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05SetMainAudioTrackCopy=$( grep SetMainAudioTrackCopy $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05CopyAllOtherAudio=$( grep CopyAllOtherAudio $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05EAC3SurroundAACStereoMono=$( grep EAC3SurroundAACStereoMono $str05OverrideFile | cut -d"," -f2 2>&1)
@@ -2196,7 +2196,7 @@ _EOF_
    		
    		# CORE Defaults
    		# ---------------------------------------------------
-   		strX264AVBRDefaults="--x264-avbr --crop auto"
+   		strX264CBRDefaults="--x264-cbr --crop auto"
    		strVTDefaults="--vt --hevc"
    		strQSVDefaults="--qsv --cuda --preset veryslow --decode all"
    		
@@ -2294,9 +2294,9 @@ _EOF_
 		if [[ "$str05UseVideoToolBox" = "true" ]]
 		then
 		
-			if [[ "$str05X264AVBRActive" = "true" ]]
+			if [[ "$str05X264CBRActive" = "true" ]]
 				then
-				arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" $strX264AVBRDefaults --target ${str05H264Target} )
+				arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" $strX264CBRDefaults )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
@@ -2306,9 +2306,9 @@ _EOF_
 			fi
 		
    		else 
-			if [[ "$str05X264AVBRActive" = "true" ]]
+			if [[ "$str05X264CBRActive" = "true" ]]
 				then
-				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strX264AVBRDefaults --target ${str05H264Target} )
+				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strX264CBRDefaults )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
@@ -2322,7 +2322,7 @@ _EOF_
 				then
 					if [[ "$str05VC1OverrideQSVDefaultsWith10bitHEVC" = "true" ]]
 					then
-						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --target ${str05HEVCTarget})
+						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --nvenc-gpu-only)
 					else
 						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05H264Target} )
 					fi		
@@ -2800,7 +2800,7 @@ _EOF_
 
 		# Unset Variables for next iteration
 		unset str05SetCopyVideo
-		unset str05X264AVBRActive
+		unset str05X264CBRActive
 		unset str05SetMainAudioTrackCopy
 		unset str05MainAudioOriginalSetting
 		unset str05OverrideFile
@@ -3739,8 +3739,8 @@ create_folder_and_move() {
 				dirP02RawVideoCodec="QSV"
 				shift
 				;;	
-			x264-avbr)
-				dirP02RawVideoCodec="x264-avbr"
+			x264-cbr)
+				dirP02RawVideoCodec="x264-cbr"
 				shift
 				;;
 			vt)
@@ -4013,8 +4013,8 @@ copy_transcoded_log_to_media() {
 				dirP05LogDir="Logs (QSV)"
 				shift
 				;;	
-			x264-avbr)
-				dirP05LogDir="Logs (x264-avbr)"
+			x264-cbr)
+				dirP05LogDir="Logs (x264-cbr)"
 				shift
 				;;
 			vt)
