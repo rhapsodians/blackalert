@@ -2,9 +2,9 @@
 
 ###############################################################################
 # BlackAlert.sh                                                               #
-# Version 0.36                                                                #
+# Version 0.37                                                                #
 #                                                                             #
-# Copyright 2021 - Joe Hurley                                                 #
+# Copyright 2022 - Joe Hurley                                                 #
 #                                                                             #
 ###############################################################################
 #                                                                             #
@@ -22,7 +22,7 @@ DELAY=2
 
 echo "############################################################################################"
 echo "#                                                                                          #"
-echo "# BLACKALERT.SH (v0.36)                                                                    #"
+echo "# BLACKALERT.SH (v0.37)                                                                    #"
 echo "#                                                                                          #"
 echo "############################################################################################"
 
@@ -87,7 +87,7 @@ pre_setup_checks() {
 				;;
 	esac					
 	
-	dirWinWorkDir="E:\Engine_Room"
+	dirWinWorkDir="D:\Engine_Room"
 
 	echo ""
 	echo ""
@@ -155,7 +155,7 @@ Please select one of the following:
 
   1. /Volumes/192.168.1.120/Engine_Room
   2. /Volumes/Media/Engine_Room
-  3. /mnt/e/Engine_Room
+  3. /mnt/d/Engine_Room
   0. Quit
 	
 ===============================================================================
@@ -175,7 +175,7 @@ _EOF_
           	break
           	;;
       	3)
-      	  	dirMacWorkDir="/mnt/e/Engine_Room"
+      	  	dirMacWorkDir="/mnt/d/Engine_Room"
           	break
           	;;
         0)
@@ -216,7 +216,7 @@ Please select one of the following:
 ===============================================================================
 
   1. /Volumes/3TB/Engine_Room-TEST
-  2. /mnt/e/Engine_Room-TEST
+  2. /mnt/d/Engine_Room-TEST
   3. /home/parallels/Desktop/Engine_Room-TEST
   0. Quit
 	
@@ -233,7 +233,7 @@ _EOF_
           	break
           	;;
       	2)
-      	  	dirMacWorkDir="/mnt/e/Engine_Room-TEST"
+      	  	dirMacWorkDir="/mnt/d/Engine_Room-TEST"
           	break
           	;;
       	3)
@@ -585,10 +585,10 @@ Please select one of the following:
 	8. MORE Options
 		- Copy original video (no video transcoding)
 		- Create single/unified mkvpropedit script
-		- Use --x264-avbr software encoding
+		- Use --x264-cbr software encoding
 		- VideoToolbox h/w transcoding (Mac)
 		- Disable forced subtitle burn-in
-		- VC-1: 10-bit HEVC instead of 8-bit QSV
+		- VC-1: 10-bit HEVC instead of 8-bit QSV (hardware-only pipeline)
 		- Use NVEnc CQ27 H.264 instead of HEVC or QSV encoding
 		- Use NVEnc Preset 5 for 10-bit HEVC encoding
 		- Provide an alternative Constant Quality (CQ) value	
@@ -774,10 +774,10 @@ Please select one of the following:
 
 	1.  Copy original video (no video transcoding)
 	2.  Create single/unified mkvpropedit script
-	3.  Use --x264-avbr software encoding
+	3.  Use --x264-cbr software encoding
 	4.  VideoToolbox h/w transcoding (Mac)
 	5.  Disable forced subtitle burn-in
-	6.  VC-1: 10-bit HEVC instead of 8-bit QSV
+	6.  VC-1: 10-bit HEVC instead of 8-bit QSV (hardware-only pipeline)
 	7.  Use NVEnc CQ27 H.264 instead of HEVC or QSV encoding
 	8.  Use NVEnc Preset 5 for 10-bit HEVC encoding
 	9.  Provide an alternative Constant Quality (CQ) value	
@@ -804,7 +804,7 @@ _EOF_
           	;;
         3)
       	  	step4_ffprobe_tsv
-      	  	step4_usex264-avbr
+      	  	step4_usex264-cbr
           	continue
           	;;
     	4)
@@ -1889,7 +1889,7 @@ step4_tsv_cleanup() {
 
 
 
-step4_usex264-avbr() {
+step4_usex264-cbr() {
 
 	echo ""
 	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
@@ -1897,15 +1897,15 @@ step4_usex264-avbr() {
 	echo "***********************************************"
 	echo "***********************************************"
 	echo "*                                             *"
-	echo "*    x264-avbr software transcoding ACTIVE    *"
+	echo "*    x264-cbr software transcoding ACTIVE    *"
 	echo "*                                             *"
 	echo "***********************************************"
 	echo "***********************************************"
 	echo "" 
-	echo "Setting $FILE to be transcoded using the software x264-avbr option."
+	echo "Setting $FILE to be transcoded using the software x264-cbr option."
 	echo ""
 	
-	echo "X264AVBRActive,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
+	echo "X264CBRActive,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
 	
 	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 
@@ -2114,7 +2114,7 @@ _EOF_
 		if [ -f $str05OverrideFile ]
 		then
 			str05SetCopyVideo=$( grep SetCopyVideo $str05OverrideFile | cut -d"," -f2 2>&1)
-			str05X264AVBRActive=$( grep X264AVBRActive $str05OverrideFile | cut -d"," -f2 2>&1)
+			str05X264CBRActive=$( grep X264CBRActive $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05SetMainAudioTrackCopy=$( grep SetMainAudioTrackCopy $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05CopyAllOtherAudio=$( grep CopyAllOtherAudio $str05OverrideFile | cut -d"," -f2 2>&1)
 			str05EAC3SurroundAACStereoMono=$( grep EAC3SurroundAACStereoMono $str05OverrideFile | cut -d"," -f2 2>&1)
@@ -2133,7 +2133,7 @@ _EOF_
   			str05AddAdditionalAudioTrack=$( grep AdditionalAudioStreamNumber $str05OverrideFile | cut -d"," -f2 2>&1)
 		fi	
 
-		# By default, the Windows E: location (set in strWinFile) will be used to specify the source path in other-transcode commands
+		# By default, the Windows D: location (set in strWinFile) will be used to specify the source path in other-transcode commands
 		# When using a Mac with VideoToolBox, the Mac source path should be provided.
 		# When Mac-based other-transcode commands are generated, they should be in a .sh script and not a Windows .bat script.
 		
@@ -2196,7 +2196,7 @@ _EOF_
    		
    		# CORE Defaults
    		# ---------------------------------------------------
-   		strX264AVBRDefaults="--x264-avbr --crop auto"
+   		strX264CBRDefaults="--x264-cbr --crop auto"
    		strVTDefaults="--vt --hevc"
    		strQSVDefaults="--qsv --cuda --preset veryslow --decode all"
    		
@@ -2294,9 +2294,9 @@ _EOF_
 		if [[ "$str05UseVideoToolBox" = "true" ]]
 		then
 		
-			if [[ "$str05X264AVBRActive" = "true" ]]
+			if [[ "$str05X264CBRActive" = "true" ]]
 				then
-				arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" $strX264AVBRDefaults --target ${str05H264Target} )
+				arrOtherTranscodeRbCommand=($strOtherTranscodeCommandMac \"${strMacFile}\" $strX264CBRDefaults )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
@@ -2306,9 +2306,9 @@ _EOF_
 			fi
 		
    		else 
-			if [[ "$str05X264AVBRActive" = "true" ]]
+			if [[ "$str05X264CBRActive" = "true" ]]
 				then
-				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strX264AVBRDefaults --target ${str05H264Target} )
+				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strX264CBRDefaults )
 				
 			elif [[ "$str05SetCopyVideo" = "true" ]]
 			 	then
@@ -2322,7 +2322,7 @@ _EOF_
 				then
 					if [[ "$str05VC1OverrideQSVDefaultsWith10bitHEVC" = "true" ]]
 					then
-						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --target ${str05HEVCTarget})
+						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --nvenc-gpu-only)
 					else
 						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05H264Target} )
 					fi		
@@ -2800,7 +2800,7 @@ _EOF_
 
 		# Unset Variables for next iteration
 		unset str05SetCopyVideo
-		unset str05X264AVBRActive
+		unset str05X264CBRActive
 		unset str05SetMainAudioTrackCopy
 		unset str05MainAudioOriginalSetting
 		unset str05OverrideFile
@@ -2865,6 +2865,7 @@ other-transcode_commands_concatenate () {
 			cat $dirOutboxCommands/$str05CommandFileName >> $dirOutboxCommands/${strMacCommandsFile}
 		else
 			cat $dirOutboxCommands/$str05CommandFileName >> $dirOutboxCommands/${strWinCommandsFile}
+			cp $dirOutboxCommands/${strWinCommandsFile} $dirTranscoded/${strWinCommandsFile}
 		fi
 		
 		read line </dev/null
@@ -2944,7 +2945,7 @@ Please select one of the following:
 
   1. /Volumes/192.168.1.120/Engine_Room/04_ReadyForTranscoding
   2. /Volumes/Media/Engine_Room/04_ReadyForTranscoding
-  3. /mnt/e/Engine_Room/04_ReadyForTranscoding
+  3. /mnt/d/Engine_Room/04_ReadyForTranscoding
   0. Quit
 	
 ===============================================================================
@@ -2964,7 +2965,7 @@ _EOF_
           	break
           	;;
       	3)
-      	  	dirReadyForTranscoding="/mnt/e/Engine_Room/04_ReadyForTranscoding"
+      	  	dirReadyForTranscoding="/mnt/d/Engine_Room/04_ReadyForTranscoding"
           	break
           	;;  	
         0)
@@ -2999,9 +3000,9 @@ Transcoded Output Directory Set-up
 Please select one of the following:
 ===============================================================================
 
-  1. /Volumes/D/05_Transcoded
+  1. /Volumes/192.168.1.120/Engine_Room/05_Transcoded
   2. /Volumes/Media/Engine_Room/05_Transcoded
-  3. /mnt/d/05_Transcoded
+  3. /mnt/d/Engine_Room/05_Transcoded
   0. Quit
 	
 ===============================================================================
@@ -3013,7 +3014,7 @@ _EOF_
   		if [[ $REPLY =~ ^[0-5]$ ]]; then
     	case $REPLY in
      	1)
-           	dirTranscodedWorkDir="/Volumes/D/05_Transcoded"
+           	dirTranscodedWorkDir="/Volumes/192.168.1.120/Engine_Room/05_Transcoded"
           	break
           	;;
       	2)
@@ -3021,7 +3022,7 @@ _EOF_
           	break
           	;;
       	3)
-      	  	dirTranscodedWorkDir="/mnt/d/05_Transcoded"
+      	  	dirTranscodedWorkDir="/mnt/d/Engine_Room/05_Transcoded"
           	break
           	;;
         0)
@@ -3251,7 +3252,7 @@ Please select one of the following:
 ===============================================================================
 
   1. /Volumes/3TB/Engine_Room-TEST/04_ReadyForTranscoding
-  2. /mnt/e/Engine_Room-TEST/04_ReadyForTranscoding
+  2. /mnt/d/Engine_Room-TEST/04_ReadyForTranscoding
   0. Quit
 	
 ===============================================================================
@@ -3267,7 +3268,7 @@ _EOF_
           	break
           	;;
       	2)
-      	  	dirReadyForTranscoding="/mnt/e/Engine_Room-TEST/04_ReadyForTranscoding"
+      	  	dirReadyForTranscoding="/mnt/d/Engine_Room-TEST/04_ReadyForTranscoding"
           	break
           	;;
         0)
@@ -3304,7 +3305,7 @@ Please select one of the following:
 
   1. /Volumes/3TB/Engine_Room-TEST/05_Transcoded
   2. /home/parallels/Desktop/Engine_Room-TEST/05_Transcoded
-  3. /mnt/d/05_Transcoded
+  3. /mnt/d/Engine_Room/05_Transcoded
   0. Quit
 	
 ===============================================================================
@@ -3324,7 +3325,7 @@ _EOF_
           	break
           	;;
       	3)
-      	  	dirTranscodedWorkDir="/mnt/d/05_Transcoded"
+      	  	dirTranscodedWorkDir="/mnt/d/Engine_Room/05_Transcoded"
           	break
           	;;
         0)
@@ -3368,7 +3369,7 @@ Please select one of the following:
 ===============================================================================
 
   1. /Volumes/3TB/Engine_Room-TEST/Pretend_Plex
-  2. /mnt/e/Engine_Room-TEST/Pretend_Plex
+  2. /mnt/d/Engine_Room-TEST/Pretend_Plex
   0. Quit
 	
 ===============================================================================
@@ -3384,7 +3385,7 @@ _EOF_
           	break
           	;;
       	2)
-      	  	dirPlexDir="/mnt/e/Engine_Room-TEST/Pretend_Plex"
+      	  	dirPlexDir="/mnt/d/Engine_Room-TEST/Pretend_Plex"
           	break
           	;;
         0)
@@ -3419,7 +3420,7 @@ Please select one of the following:
 ===============================================================================
 
   1. /Volumes/3TB/Engine_Room-TEST/Pretend_OneDrive/Transcoding_Output
-  2. /mnt/e/Engine_Room-TEST/Pretend_OneDrive/Transcoding_Output
+  2. /mnt/d/Engine_Room-TEST/Pretend_OneDrive/Transcoding_Output
   0. Quit
 	
 ===============================================================================
@@ -3435,7 +3436,7 @@ _EOF_
           	break
           	;;
       	2)
-      	  	dirOneDriveLogsDir="/mnt/e/Engine_Room-TEST/Pretend_OneDrive/Transcoding_Output"
+      	  	dirOneDriveLogsDir="/mnt/d/Engine_Room-TEST/Pretend_OneDrive/Transcoding_Output"
           	break
           	;;
         0)
@@ -3469,7 +3470,7 @@ Please select one of the following:
 ===============================================================================
 
   1. /Volumes/3TB/Engine_Room-TEST/Pretend_Media
-  2. /mnt/e/Engine_Room-TEST/Pretend_Media_for_NAS
+  2. /mnt/d/Engine_Room-TEST/Pretend_Media_for_NAS
   3. ARCHIVE Copies (Mac)
   4. ARCHIVE Copies (Win)
   5. Do not copy files - leave in-situ
@@ -3488,7 +3489,7 @@ _EOF_
           	break
           	;;
       	2)
-      	  	dirMediaDir="/mnt/e/Engine_Room-TEST/Pretend_Media_for_NAS"
+      	  	dirMediaDir="/mnt/d/Engine_Room-TEST/Pretend_Media_for_NAS"
           	break
           	;;
         3)
@@ -3738,8 +3739,8 @@ create_folder_and_move() {
 				dirP02RawVideoCodec="QSV"
 				shift
 				;;	
-			x264-avbr)
-				dirP02RawVideoCodec="x264-avbr"
+			x264-cbr)
+				dirP02RawVideoCodec="x264-cbr"
 				shift
 				;;
 			vt)
@@ -4012,8 +4013,8 @@ copy_transcoded_log_to_media() {
 				dirP05LogDir="Logs (QSV)"
 				shift
 				;;	
-			x264-avbr)
-				dirP05LogDir="Logs (x264-avbr)"
+			x264-cbr)
+				dirP05LogDir="Logs (x264-cbr)"
 				shift
 				;;
 			vt)
@@ -4202,8 +4203,8 @@ copy_raw_content_to_media() {
 			;;
 			
 		Pretend_ARCHIVE_Win)
-			dirDestinationRawMKVContent1="/mnt/e/Engine_Room-TEST/Pretend_Archive-1/_New"
-			dirDestinationRawMKVContent2="/mnt/e/Engine_Room-TEST/Pretend_Archive-2/_New"
+			dirDestinationRawMKVContent1="/mnt/d/Engine_Room-TEST/Pretend_Archive-1/_New"
+			dirDestinationRawMKVContent2="/mnt/d/Engine_Room-TEST/Pretend_Archive-2/_New"
 
 			echo "About to begin copying raw MKVs to the ext HDD Archive Folders' holding area ..."
 			echo "Command:"

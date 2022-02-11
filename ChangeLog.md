@@ -1,5 +1,15 @@
 # Change Log #
 
+## 0.37 ##
+_11 February 2022_
+- updated copyright to 2022
+- switched to SSD (D:) for rips and transcodes
+- Updates for `other-transcode` v0.10.0 including:
+  - replaced `--x264-avbr` with the new constant bitrate formula `--x264-cbr`
+  - added 10-bit HEVC h/w only pipeline for faster VC-1 transcodes (default to QSV remains so this is an optional override)
+  - standardised on `ffmpeg 5.0` or better for GPU-only pipeline content.
+
+
 ## 0.36 ##
 _20 June 2021_
 - Updates for `other-transcode` v0.9.0 including:
