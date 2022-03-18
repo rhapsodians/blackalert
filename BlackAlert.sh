@@ -571,7 +571,7 @@ Please select one of the following:
 	3. Rename or add a title to a SUBTITLE stream
 	4. Set audio default track
 	5. Set the forced-subtitle flag
-	6. QSV h/w transcoding (Windows)
+	6. NVEnc H.264 h/w transcoding (full h/w pipeline)
 	7. AUDIO Options
 		- Copy the main audio track (no audio transcoding)
 		- Copy all audio tracks (no audio transcoding)
@@ -589,6 +589,7 @@ Please select one of the following:
 		- VideoToolbox h/w transcoding (Mac)
 		- Disable forced subtitle burn-in
 		- VC-1: 10-bit HEVC instead of 8-bit QSV (hardware-only pipeline)
+		- QSV h/w transcoding (Windows)
 		- Use NVEnc CQ27 H.264 instead of HEVC or QSV encoding
 		- Use NVEnc Preset 5 for 10-bit HEVC encoding
 		- Provide an alternative Constant Quality (CQ) value	
@@ -630,7 +631,7 @@ _EOF_
           	;;	
         6)
         	step4_ffprobe_tsv
-        	step4_QSV
+			step4_NVEncCQ27H264
         	continue
           	;;
         7)
@@ -778,19 +779,20 @@ Please select one of the following:
 	4.  VideoToolbox h/w transcoding (Mac)
 	5.  Disable forced subtitle burn-in
 	6.  VC-1: 10-bit HEVC instead of 8-bit QSV (hardware-only pipeline)
-	7.  Use NVEnc CQ27 H.264 instead of HEVC or QSV encoding
-	8.  Use NVEnc Preset 5 for 10-bit HEVC encoding
-	9.  Provide an alternative Constant Quality (CQ) value	
-	10. Back
+	7.  QSV h/w transcoding (Windows)
+	8.  Use NVEnc CQ27 H.264 instead of HEVC or QSV encoding
+	9.  Use NVEnc Preset 5 for 10-bit HEVC encoding
+	10. Provide an alternative Constant Quality (CQ) value	
+	11. Back
 	0.  Quit
 
 =================================================================
 
 _EOF_
 
-	  read -p "Enter selection [0-10] > "
+	  read -p "Enter selection [0-11] > "
 
-  		if [[ "$REPLY" =~ ^[0-9]+$ ]] && [ "$REPLY" -ge 1 ] && [ "$REPLY" -le 10 ]; then
+  		if [[ "$REPLY" =~ ^[0-9]+$ ]] && [ "$REPLY" -ge 1 ] && [ "$REPLY" -le 11 ]; then
     	case $REPLY in
      	1)
            	step4_ffprobe_tsv
@@ -823,18 +825,22 @@ _EOF_
         	continue
         	;;
         7)  step4_ffprobe_tsv
+        	step4_QSV
+        	continue
+        	;;       	
+        8)  step4_ffprobe_tsv
         	step4_NVEncCQ27H264
         	continue
         	;;
-        8)  step4_ffprobe_tsv
+        9)  step4_ffprobe_tsv
         	step4_NVEncHEVC10Preset5
         	continue
         	;;  
-        9)  step4_ffprobe_tsv
+        10)  step4_ffprobe_tsv
         	step4_NVEncNewCQValue
         	continue
         	;;               	
-        10)
+        11)
         	break
         	;;	
         0)
@@ -1591,7 +1597,7 @@ step4_VC1OverrideQSVDefaultsWith10bitHEVC() {
 	echo "VC1OverrideQSVDefaultsWith10bitHEVC,true" >> $dirOutboxCommands/${str04RawName}.other-transcode.override.command.txt
 	echo ""
 	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
-	echo "QSV defaults will not be used for this VC-1 transcode. 10-bit HEVC will be used instead"
+	echo "H.264 defaults will not be used for this VC-1 transcode. 10-bit HEVC will be used instead"
 	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo ""	
 
@@ -1741,6 +1747,8 @@ step4_QSV() {
 	echo "------------------------------------------------------------------------------------------------------------------------------------------------------"
 	echo ""
 }
+
+
 
 
 
@@ -2131,6 +2139,7 @@ _EOF_
   			str05UseQSV=$( grep UseQSV $str05OverrideFile | cut -d"," -f2 2>&1)
   			str05UseVideoToolBox=$( grep UseVideoToolBox $str05OverrideFile | cut -d"," -f2 2>&1)
   			str05AddAdditionalAudioTrack=$( grep AdditionalAudioStreamNumber $str05OverrideFile | cut -d"," -f2 2>&1)
+  			
 		fi	
 
 		# By default, the Windows D: location (set in strWinFile) will be used to specify the source path in other-transcode commands
@@ -2196,9 +2205,12 @@ _EOF_
    		
    		# CORE Defaults
    		# ---------------------------------------------------
-   		strX264CBRDefaults="--x264-cbr --crop auto"
+   		#strX264CBRDefaults="--x264-cbr --crop auto"
+   		strX264CBRDefaults="--x264-cbr --target 2160p=12000 --target 1080p=6000 --target 720p=3600 --target 480p=1800"   		
    		strVTDefaults="--vt --hevc"
    		strQSVDefaults="--qsv --cuda --preset veryslow --decode all"
+   		strNVEncH264Defaults="--decode all --nvenc-gpu-only --nvenc-recommended --nvenc-cq 27 --rc-maxrate 15000"
+
    		
    		if [[ "$str05NVEncNewCQValue" = "" ]]
    		then
@@ -2211,7 +2223,7 @@ _EOF_
    		strMaxMuxingQueue="--max-muxing-queue-size 1024"   		
    		
   		# For both QSV (H.264) and HEVC Preset 10, I'm increasing the default bitrates
-  		
+  
      	if [[ "$str05UseQSV" = "true" ]]
    		then
    		
@@ -2317,6 +2329,10 @@ _EOF_
 			elif [[ "$str05UseQSV" = "true" ]]
 				then
 				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05H264Target} )
+			 	
+			elif [[ "$str05NVEncCQ27H264" = "true" ]]
+				then
+				arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strNVEncH264Defaults )
 
 			elif [[ "$str05DefaultVideoCodec" = "vc1" ]]
 				then
@@ -2324,7 +2340,9 @@ _EOF_
 					then
 						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strHEVCDefaults --nvenc-gpu-only)
 					else
-						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05H264Target} )
+						#arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strQSVDefaults --target ${str05H264Target} )
+						arrOtherTranscodeRbCommand=(call $strOtherTranscodeCommandWin \"${strWinFile}\" $strNVEncH264Defaults )
+
 					fi		
 			elif [[ "$str05NVEncHEVC10Preset5" = "true" ]]
 				then

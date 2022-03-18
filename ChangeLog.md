@@ -1,8 +1,10 @@
 # Change Log #
 
 ## 0.38 ##
-_11 February 2022_
-- 
+_18 March 2022_
+- Updated formula for 8-bit H.264 content - changing from QSV using `--decode all --nvenc-gpu-only --nvenc-recommended --nvenc-cq 27 --rc-maxrate 15000`
+- Updated formula for software-based `x264` too:  `--x264-cbr --target 2160p=12000 --target 1080p=6000 --target 720p=3600 --target 480p=1800`
+- Swap around some of the menus to promote these two and demote QSV down as an optional transcode method. 
 
 
 ## 0.37 ##
