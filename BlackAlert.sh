@@ -2209,7 +2209,7 @@ _EOF_
    		strX264CBRDefaults="--x264-cbr --target 2160p=12000 --target 1080p=6000 --target 720p=3600 --target 480p=1800"   		
    		strVTDefaults="--vt --hevc"
    		strQSVDefaults="--qsv --cuda --preset veryslow --decode all"
-   		strNVEncH264Defaults="--decode all --nvenc-gpu-only --nvenc-recommended --nvenc-cq 27 --rc-maxrate 15000"
+   		strNVEncH264Defaults="--nvenc --decode all --nvenc-gpu-only --nvenc-recommended --nvenc-cq 27 --rc-maxrate 15000"
 
    		
    		if [[ "$str05NVEncNewCQValue" = "" ]]
@@ -3753,6 +3753,10 @@ create_folder_and_move() {
 				dirP02RawVideoCodec="HEVC"
 				shift
 				;;
+			nvenc)
+			   	dirP02RawVideoCodec="NVEnc"
+				shift
+				;;
 			qsv)
 				dirP02RawVideoCodec="QSV"
 				shift
@@ -4027,6 +4031,10 @@ copy_transcoded_log_to_media() {
 				dirP05LogDir="Logs"
 				shift
 				;;
+			nvenc)
+				dirP05LogDir="Logs (NVEnc H264)"
+				shift
+				;;
 			qsv)
 				dirP05LogDir="Logs (QSV)"
 				shift
@@ -4038,7 +4046,7 @@ copy_transcoded_log_to_media() {
 			vt)
 				dirP05LogDir="VT"
 				shift
-				;;			
+				;;		
 			*)
 				dirP05LogDir="Logs"
 				shift
